@@ -1,56 +1,27 @@
 import pygame
 import random
+import PlayerTank
+import EnemyTank
+import Colors
+import Sizes
 
-# Инициализация Pygame
 pygame.init()
 
-# Настройки экрана
-screen_width = 800
-screen_height = 600
-screen = pygame.display.set_mode((screen_width, screen_height))
+
+screen = pygame.display.set_mode((Sizes.SCREEN_WIDTH, Sizes.SCREEN_HEIGHT))
 pygame.display.set_caption("Battle City")
+# TODO pygame.display.set_icon()
 
-# Цвета
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
 
-# Частота кадров
 clock = pygame.time.Clock()
 FPS = 60
-
-
-class PlayerTank(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super().__init__()
-        self.image = pygame.Surface([40, 40])
-        self.image.fill(WHITE)
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-        self.speed = 5
-        self.direction = 'up'
-
-    def update(self):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            self.rect.x -= self.speed
-            self.direction = 'left'
-        if keys[pygame.K_RIGHT]:
-            self.rect.x += self.speed
-            self.direction = 'right'
-        if keys[pygame.K_UP]:
-            self.rect.y -= self.speed
-            self.direction = 'up'
-        if keys[pygame.K_DOWN]:
-            self.rect.y += self.speed
-            self.direction = 'down'
 
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y, direction):
         super().__init__()
         self.image = pygame.Surface([5, 5])
-        self.image.fill(WHITE)
+        self.image.fill(Colors.WHITE)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -67,29 +38,13 @@ class Bullet(pygame.sprite.Sprite):
         elif self.direction == 'right':
             self.rect.x += self.speed
 
-        if self.rect.y < 0 or self.rect.y > screen_height or self.rect.x < 0 or self.rect.x > screen_width:
+        if (self.rect.y < 0 or self.rect.y > Sizes.SCREEN_HEIGHT
+                or self.rect.x < 0 or self.rect.x > Sizes.SCREEN_WIDTH):
             self.kill()
 
 
-class EnemyTank(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super().__init__()
-        self.image = pygame.Surface([40, 40])
-        self.image.fill(WHITE)
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-        self.speed = 3
-
-    def update(self):
-        self.rect.y += self.speed
-        if self.rect.y > screen_height:
-            self.rect.y = -40
-            self.rect.x = random.randint(0, screen_width - 40)
-
-
 def main():
-    player = PlayerTank(screen_width // 2, screen_height - 50)
+    player = PlayerTank.PlayerTank(Sizes.SCREEN_WIDTH // 2, Sizes.SCREEN_HEIGHT - 50)
     all_sprites = pygame.sprite.Group()
     bullets = pygame.sprite.Group()
     enemies = pygame.sprite.Group()
@@ -97,7 +52,7 @@ def main():
     all_sprites.add(player)
 
     for _ in range(5):
-        enemy = EnemyTank(random.randint(0, screen_width - 40), random.randint(-300, -40))
+        enemy = EnemyTank.EnemyTank(random.randint(0, Sizes.SCREEN_WIDTH - 40), random.randint(-300, -40))
         all_sprites.add(enemy)
         enemies.add(enemy)
 
@@ -120,7 +75,7 @@ def main():
                 bullets.remove(bullet)
                 all_sprites.remove(bullet)
 
-        screen.fill(BLACK)
+        screen.fill(Colors.BLACK)
         all_sprites.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
