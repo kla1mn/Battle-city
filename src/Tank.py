@@ -1,4 +1,4 @@
 class Tank:
     def __init__(self):
         self.speed = 2
-        self.
+        self.direction = 0
