@@ -1,22 +1,41 @@
+import uuid
+
+
 class Timer:
     def __init__(self):
         self.timers = []
 
-    def add(self, interval, callback, repeat=-1):
-        self.timers.append({
+    def add(self, interval, f, repeat=-1):
+        options = {
             "interval": interval,
-            "callback": callback,
+            "callback": f,
             "repeat": repeat,
             "times": 0,
-            "time": 0
-        })
+            "time": 0,
+            "uuid": uuid.uuid4()
+        }
+        self.timers.append(options)
 
-    def update(self):
+        return options["uuid"]
+
+    def destroy(self, uuid_nr):
         for timer in self.timers:
-            timer["time"] += 1
-            if timer["time"] >= timer["interval"]:
-                timer["time"] = 0
-                timer["callback"]()
+            if timer["uuid"] == uuid_nr:
+                self.timers.remove(timer)
+                return
+
+    def update(self, time_passed):
+        for timer in self.timers:
+            timer["time"] += time_passed
+            if timer["time"] > timer["interval"]:
+                timer["time"] -= timer["interval"]
                 timer["times"] += 1
-                if -1 < timer["repeat"] <= timer["times"]:
+                if -1 < timer["repeat"] == timer["times"]:
                     self.timers.remove(timer)
+                try:
+                    timer["callback"]()
+                except:
+                    try:
+                        self.timers.remove(timer)
+                    except:
+                        pass
