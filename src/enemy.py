@@ -9,11 +9,10 @@ from src.tank import Tank
 class Enemy(Tank):
     (TYPE_BASIC, TYPE_FAST, TYPE_POWER, TYPE_ARMOR) = range(4)
 
-    def __init__(self, level, type, position=None, direction=None, filename=None):
+    def __init__(self, game, level, type, position=None, direction=None, filename=None):
 
-        Tank.__init__(self, level, type, position=None, direction=None, filename=None)
-
-        global enemies, sprites
+        Tank.__init__(self, game, level, type, position=None, direction=None, filename=None)
+        self.game = game
 
         # if true, do not fire
         self.bullet_queued = False
@@ -37,20 +36,20 @@ class Enemy(Tank):
         # 1 in 5 chance this will be bonus carrier, but only if no other tank is
         if random.randint(1, 5) == 1:
             self.bonus = True
-            for enemy in enemies:
+            for enemy in self.game.enemies:
                 if enemy.bonus:
                     self.bonus = False
                     break
 
         images = [
-            sprites.subsurface(32 * 2, 0, 13 * 2, 15 * 2),
-            sprites.subsurface(48 * 2, 0, 13 * 2, 15 * 2),
-            sprites.subsurface(64 * 2, 0, 13 * 2, 15 * 2),
-            sprites.subsurface(80 * 2, 0, 13 * 2, 15 * 2),
-            sprites.subsurface(32 * 2, 16 * 2, 13 * 2, 15 * 2),
-            sprites.subsurface(48 * 2, 16 * 2, 13 * 2, 15 * 2),
-            sprites.subsurface(64 * 2, 16 * 2, 13 * 2, 15 * 2),
-            sprites.subsurface(80 * 2, 16 * 2, 13 * 2, 15 * 2)
+            self.game.sprites.subsurface(32 * 2, 0, 13 * 2, 15 * 2),
+            self.game.sprites.subsurface(48 * 2, 0, 13 * 2, 15 * 2),
+            self.game.sprites.subsurface(64 * 2, 0, 13 * 2, 15 * 2),
+            self.game.sprites.subsurface(80 * 2, 0, 13 * 2, 15 * 2),
+            self.game.sprites.subsurface(32 * 2, 16 * 2, 13 * 2, 15 * 2),
+            self.game.sprites.subsurface(48 * 2, 16 * 2, 13 * 2, 15 * 2),
+            self.game.sprites.subsurface(64 * 2, 16 * 2, 13 * 2, 15 * 2),
+            self.game.sprites.subsurface(80 * 2, 16 * 2, 13 * 2, 15 * 2)
         ]
 
         self.image = images[self.type + 0]
@@ -84,16 +83,16 @@ class Enemy(Tank):
         self.path = self.generatePath(self.direction)
 
         # 1000 is duration between shots
-        self.timer_uuid_fire = gtimer.add(1000, lambda: self.fire())
+        self.timer_uuid_fire = self.game.gtimer.add(1000, lambda: self.fire())
 
         # turn on flashing
         if self.bonus:
-            self.timer_uuid_flash = gtimer.add(200, lambda: self.toggleFlash())
+            self.timer_uuid_flash = self.game.gtimer.add(200, lambda: self.toggleFlash())
 
     def toggleFlash(self):
         """ Toggle flash state """
         if self.state not in (self.STATE_ALIVE, self.STATE_SPAWNING):
-            gtimer.destroy(self.timer_uuid_flash)
+            self.game.gtimer.destroy(self.timer_uuid_flash)
             return
         self.flash = not self.flash
         if self.flash:
@@ -110,20 +109,14 @@ class Enemy(Tank):
 
     def spawnBonus(self):
         """ Create new bonus if needed """
-
-        global bonuses
-
-        if len(bonuses) > 0:
+        if len(self.game.bonuses) > 0:
             return
-        bonus = Bonus(self.level)
-        bonuses.append(bonus)
-        gtimer.add(500, lambda: bonus.toggleVisibility())
-        gtimer.add(10000, lambda: bonuses.remove(bonus), 1)
+        bonus = Bonus(self.game, self.level)
+        self.game.bonuses.append(bonus)
+        self.game.gtimer.add(500, lambda: bonus.toggleVisibility())
+        self.game.gtimer.add(10000, lambda: self.game.bonuses.remove(bonus), 1)
 
     def getFreeSpawningPosition(self):
-
-        global players, enemies
-
         available_positions = [
             [(self.level.TILE_SIZE * 2 - self.rect.width) / 2, (self.level.TILE_SIZE * 2 - self.rect.height) / 2],
             [12 * self.level.TILE_SIZE + (self.level.TILE_SIZE * 2 - self.rect.width) / 2,
@@ -140,7 +133,7 @@ class Enemy(Tank):
 
             # collisions with other enemies
             collision = False
-            for enemy in enemies:
+            for enemy in self.game.enemies:
                 if enemy_rect.colliderect(enemy.rect):
                     collision = True
                     continue
@@ -150,7 +143,7 @@ class Enemy(Tank):
 
             # collisions with players
             collision = False
-            for player in players:
+            for player in self.game.players:
                 if enemy_rect.colliderect(player.rect):
                     collision = True
                     continue
@@ -163,8 +156,6 @@ class Enemy(Tank):
 
     def move(self):
         """ move enemy if possible """
-
-        global players, enemies, bonuses
 
         if self.state != self.STATE_ALIVE or self.paused or self.paralised:
             return
@@ -200,23 +191,23 @@ class Enemy(Tank):
             return
 
         # collisions with other enemies
-        for enemy in enemies:
+        for enemy in self.game.enemies:
             if enemy != self and new_rect.colliderect(enemy.rect):
                 self.turnAround()
                 self.path = self.generatePath(self.direction)
                 return
 
         # collisions with players
-        for player in players:
+        for player in self.game.players:
             if new_rect.colliderect(player.rect):
                 self.turnAround()
                 self.path = self.generatePath(self.direction)
                 return
 
         # collisions with bonuses
-        for bonus in bonuses:
+        for bonus in self.game.bonuses:
             if new_rect.colliderect(bonus.rect):
-                bonuses.remove(bonus)
+                self.game.bonuses.remove(bonus)
 
         # if no collision, move enemy
         self.rect.topleft = new_rect.topleft
@@ -232,7 +223,7 @@ class Enemy(Tank):
 
         all_directions = [self.DIR_UP, self.DIR_RIGHT, self.DIR_DOWN, self.DIR_LEFT]
 
-        if direction == None:
+        if direction is None:
             if self.direction in [self.DIR_UP, self.DIR_RIGHT]:
                 opposite_direction = self.direction + 2
             else:
@@ -287,7 +278,7 @@ class Enemy(Tank):
                     break
 
         # if we can go anywhere else, turn around
-        if new_direction == None:
+        if new_direction is None:
             new_direction = opposite_direction
             print("nav izejas. griezhamies")
 

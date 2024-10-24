@@ -19,8 +19,8 @@ class Bonus:
     # bonus types
     (BONUS_GRENADE, BONUS_HELMET, BONUS_SHOVEL, BONUS_STAR, BONUS_TANK, BONUS_TIMER) = range(6)
 
-    def __init__(self, level):
-        global sprites
+    def __init__(self, game, level):
+        self.game = game
 
         # to know where to place
         self.level = level
@@ -42,13 +42,12 @@ class Bonus:
             self.BONUS_TIMER
         ])
 
-        self.image = sprites.subsurface(16 * 2 * self.bonus, 32 * 2, 16 * 2, 15 * 2)
+        self.image = self.game.sprites.subsurface(16 * 2 * self.bonus, 32 * 2, 16 * 2, 15 * 2)
 
     def draw(self):
         """ draw bonus """
-        global screen
         if self.visible:
-            screen.blit(self.image, self.rect.topleft)
+            self.game.screen.blit(self.image, self.rect.topleft)
 
     def toggleVisibility(self):
         """ Toggle bonus visibility """

@@ -17,10 +17,8 @@ class Tank:
     # sides
     (SIDE_PLAYER, SIDE_ENEMY) = range(2)
 
-    def __init__(self, level, side, gtimer, position=None, direction=None):
-        self.gtimer = gtimer
-
-        global sprites
+    def __init__(self, game, level, side, position=None, direction=None, filename=None):
+        self.game = game
 
         # health. 0 health means dead
         self.health = 100
@@ -62,15 +60,15 @@ class Tank:
         self.pressed = [False] * 4
 
         self.shield_images = [
-            sprites.subsurface(0, 48 * 2, 16 * 2, 16 * 2),
-            sprites.subsurface(16 * 2, 48 * 2, 16 * 2, 16 * 2)
+            self.game.sprites.subsurface(0, 48 * 2, 16 * 2, 16 * 2),
+            self.game.sprites.subsurface(16 * 2, 48 * 2, 16 * 2, 16 * 2)
         ]
         self.shield_image = self.shield_images[0]
         self.shield_index = 0
 
         self.spawn_images = [
-            sprites.subsurface(32 * 2, 48 * 2, 16 * 2, 16 * 2),
-            sprites.subsurface(48 * 2, 48 * 2, 16 * 2, 16 * 2)
+            self.game.sprites.subsurface(32 * 2, 48 * 2, 16 * 2, 16 * 2),
+            self.game.sprites.subsurface(48 * 2, 48 * 2, 16 * 2, 16 * 2)
         ]
         self.spawn_image = self.spawn_images[0]
         self.spawn_index = 0
@@ -90,22 +88,22 @@ class Tank:
         self.state = self.STATE_SPAWNING
 
         # spawning animation
-        self.timer_uuid_spawn = gtimer.add(100, lambda: self.toggleSpawnImage())
+        self.timer_uuid_spawn = self.game.gtimer.add(100, lambda: self.toggleSpawnImage())
 
         # duration of spawning
-        self.timer_uuid_spawn_end = gtimer.add(1000, lambda: self.endSpawning())
+        self.timer_uuid_spawn_end = self.game.gtimer.add(1000, lambda: self.endSpawning())
 
     def endSpawning(self):
         """ End spawning
         Player becomes operational
         """
         self.state = self.STATE_ALIVE
-        self.gtimer.destroy(self.timer_uuid_spawn_end)
+        self.game.gtimer.destroy(self.timer_uuid_spawn_end)
 
     def toggleSpawnImage(self):
         """ advance to the next spawn image """
         if self.state != self.STATE_SPAWNING:
-            self.gtimer.destroy(self.timer_uuid_spawn)
+            self.game.gtimer.destroy(self.timer_uuid_spawn)
             return
         self.spawn_index += 1
         if self.spawn_index >= len(self.spawn_images):
@@ -115,7 +113,7 @@ class Tank:
     def toggleShieldImage(self):
         """ advance to the next shield image """
         if self.state != self.STATE_ALIVE:
-            self.gtimer.destroy(self.timer_uuid_shield)
+            self.game.gtimer.destroy(self.timer_uuid_shield)
             return
         if self.shielded:
             self.shield_index += 1
@@ -125,21 +123,20 @@ class Tank:
 
     def draw(self):
         """ draw tank """
-        global screen
         if self.state == self.STATE_ALIVE:
-            screen.blit(self.image, self.rect.topleft)
+            self.game.screen.blit(self.image, self.rect.topleft)
             if self.shielded:
-                screen.blit(self.shield_image, [self.rect.left - 3, self.rect.top - 3])
+                self.game.screen.blit(self.shield_image, [self.rect.left - 3, self.rect.top - 3])
         elif self.state == self.STATE_EXPLODING:
             self.explosion.draw()
         elif self.state == self.STATE_SPAWNING:
-            screen.blit(self.spawn_image, self.rect.topleft)
+            self.game.screen.blit(self.spawn_image, self.rect.topleft)
 
     def explode(self):
         """ start tanks's explosion """
         if self.state != self.STATE_DEAD:
             self.state = self.STATE_EXPLODING
-            self.explosion = Explosion(self.rect.topleft)
+            self.explosion = Explosion(self.game, self.rect.topleft)
 
             if self.bonus:
                 self.spawnBonus()
@@ -150,10 +147,8 @@ class Tank:
         @return boolean True if bullet was fired, false otherwise
         """
 
-        global bullets, labels
-
         if self.state != self.STATE_ALIVE:
-            self.gtimer.destroy(self.timer_uuid_fire)
+            self.game.gtimer.destroy(self.timer_uuid_fire)
             return False
 
         if self.paused:
@@ -161,13 +156,13 @@ class Tank:
 
         if not forced:
             active_bullets = 0
-            for bullet in bullets:
+            for bullet in self.game.bullets:
                 if bullet.owner_class == self and bullet.state == bullet.STATE_ACTIVE:
                     active_bullets += 1
             if active_bullets >= self.max_active_bullets:
                 return False
 
-        bullet = Bullet(self.level, self.rect.topleft, self.direction)
+        bullet = Bullet(self.game, self.level, self.rect.topleft, self.direction)
 
         # if superpower level is at least 1
         if self.superpowers > 0:
@@ -184,7 +179,7 @@ class Tank:
             self.bullet_queued = False
 
         bullet.owner_class = self
-        bullets.append(bullet)
+        self.game.bullets.append(bullet)
         return True
 
     def rotate(self, direction, fix_position=True):
@@ -236,8 +231,6 @@ class Tank:
         doesn't trigger bullet explosion
         """
 
-        global play_sounds, sounds
-
         if self.shielded:
             return True
 
@@ -248,10 +241,10 @@ class Tank:
                     tank.trophies["enemy" + str(self.type)] += 1
                     points = (self.type + 1) * 100
                     tank.score += points
-                    if play_sounds:
-                        sounds["explosion"].play()
+                    if self.game.play_sounds:
+                        self.game.sounds["explosion"].play()
 
-                    labels.append(Label(self.rect.topleft, str(points), 500))
+                    self.game.labels.append(Label(self, self.rect.topleft, str(points), 500))
 
                 self.explode()
             return True
@@ -261,7 +254,7 @@ class Tank:
         elif self.side == self.SIDE_PLAYER:
             if not self.paralised:
                 self.setParalised(True)
-                self.timer_uuid_paralise = self.gtimer.add(10000, lambda: self.setParalised(False), 1)
+                self.timer_uuid_paralise = self.game.gtimer.add(10000, lambda: self.setParalised(False), 1)
             return True
 
     def setParalised(self, paralised=True):
@@ -270,6 +263,6 @@ class Tank:
         @return None
         """
         if self.state != self.STATE_ALIVE:
-            self.gtimer.destroy(self.timer_uuid_paralise)
+            self.game.gtimer.destroy(self.timer_uuid_paralise)
             return
         self.paralised = paralised

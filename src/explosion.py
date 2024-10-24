@@ -1,19 +1,17 @@
 class Explosion:
-    def __init__(self, position, interval=None, images=None):
-
-        global sprites
-
+    def __init__(self, game, position, interval=None, images=None):
+        self.game = game
         self.position = [position[0] - 16, position[1] - 16]
         self.active = True
 
-        if interval == None:
+        if interval is None:
             interval = 100
 
-        if images == None:
+        if images is None:
             images = [
-                sprites.subsurface(0, 80 * 2, 32 * 2, 32 * 2),
-                sprites.subsurface(32 * 2, 80 * 2, 32 * 2, 32 * 2),
-                sprites.subsurface(64 * 2, 80 * 2, 32 * 2, 32 * 2)
+                self.game.sprites.subsurface(0, 80 * 2, 32 * 2, 32 * 2),
+                self.game.sprites.subsurface(32 * 2, 80 * 2, 32 * 2, 32 * 2),
+                self.game.sprites.subsurface(64 * 2, 80 * 2, 32 * 2, 32 * 2)
             ]
 
         images.reverse()
@@ -22,12 +20,11 @@ class Explosion:
 
         self.image = self.images.pop()
 
-        gtimer.add(interval, lambda: self.update(), len(self.images) + 1)
+        self.game.gtimer.add(interval, lambda: self.update(), len(self.images) + 1)
 
     def draw(self):
-        global screen
         """ draw current explosion frame """
-        screen.blit(self.image, self.position)
+        self.game.screen.blit(self.image, self.position)
 
     def update(self):
         """ Advace to the next image """

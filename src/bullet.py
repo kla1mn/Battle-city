@@ -1,7 +1,6 @@
 import pygame
 
 from src.explosion import Explosion
-from src.main import play_sounds, sounds
 
 
 class Bullet:
@@ -13,10 +12,9 @@ class Bullet:
 
     (OWNER_PLAYER, OWNER_ENEMY) = range(2)
 
-    def __init__(self, level, position, direction, damage=100, speed=5):
-
+    def __init__(self, game, level, position, direction, damage=100, speed=5):
+        self.game = game
         self.explosion = None
-        global sprites
 
         self.level = level
         self.direction = direction
@@ -28,7 +26,7 @@ class Bullet:
         # 2-can destroy steel
         self.power = 1
 
-        self.image = sprites.subsurface(75 * 2, 74 * 2, 3 * 2, 4 * 2)
+        self.image = self.game.sprites.subsurface(75 * 2, 74 * 2, 3 * 2, 4 * 2)
 
         # position is player's top left corner, so we'll need to
         # recalculate a bit. also rotate image itself.
@@ -45,8 +43,8 @@ class Bullet:
             self.rect = pygame.Rect(position[0] - 8, position[1] + 11, 8, 6)
 
         self.explosion_images = [
-            sprites.subsurface(0, 80 * 2, 32 * 2, 32 * 2),
-            sprites.subsurface(32 * 2, 80 * 2, 32 * 2, 32 * 2),
+            self.game.sprites.subsurface(0, 80 * 2, 32 * 2, 32 * 2),
+            self.game.sprites.subsurface(32 * 2, 80 * 2, 32 * 2, 32 * 2),
         ]
 
         self.speed = speed
@@ -55,14 +53,12 @@ class Bullet:
 
     def draw(self):
         """ draw bullet """
-        global screen
         if self.state == self.STATE_ACTIVE:
-            screen.blit(self.image, self.rect.topleft)
+            self.game.screen.blit(self.image, self.rect.topleft)
         elif self.state == self.STATE_EXPLODING:
             self.explosion.draw()
 
     def update(self):
-        global castle, players, enemies, bullets
 
         if self.state == self.STATE_EXPLODING:
             if not self.explosion.active:
@@ -76,29 +72,29 @@ class Bullet:
         if self.direction == self.DIR_UP:
             self.rect.topleft = [self.rect.left, self.rect.top - self.speed]
             if self.rect.top < 0:
-                if play_sounds and self.owner == self.OWNER_PLAYER:
-                    sounds["steel"].play()
+                if self.game.play_sounds and self.owner == self.OWNER_PLAYER:
+                    self.game.sounds["steel"].play()
                 self.explode()
                 return
         elif self.direction == self.DIR_RIGHT:
             self.rect.topleft = [self.rect.left + self.speed, self.rect.top]
             if self.rect.left > (416 - self.rect.width):
-                if play_sounds and self.owner == self.OWNER_PLAYER:
-                    sounds["steel"].play()
+                if self.game.play_sounds and self.owner == self.OWNER_PLAYER:
+                    self.game.sounds["steel"].play()
                 self.explode()
                 return
         elif self.direction == self.DIR_DOWN:
             self.rect.topleft = [self.rect.left, self.rect.top + self.speed]
             if self.rect.top > (416 - self.rect.height):
-                if play_sounds and self.owner == self.OWNER_PLAYER:
-                    sounds["steel"].play()
+                if self.game.play_sounds and self.owner == self.OWNER_PLAYER:
+                    self.game.sounds["steel"].play()
                 self.explode()
                 return
         elif self.direction == self.DIR_LEFT:
             self.rect.topleft = [self.rect.left - self.speed, self.rect.top]
             if self.rect.left < 0:
-                if play_sounds and self.owner == self.OWNER_PLAYER:
-                    sounds["steel"].play()
+                if self.game.play_sounds and self.owner == self.OWNER_PLAYER:
+                    self.game.sounds["steel"].play()
                 self.explode()
                 return
 
@@ -117,7 +113,7 @@ class Bullet:
             return
 
         # check for collisions with other bullets
-        for bullet in bullets:
+        for bullet in self.game.bullets:
             if self.state == self.STATE_ACTIVE and bullet.owner != self.owner and bullet != self and self.rect.colliderect(
                     bullet.rect):
                 self.destroy()
@@ -125,31 +121,30 @@ class Bullet:
                 return
 
         # check for collisions with players
-        for player in players:
+        for player in self.game.players:
             if player.state == player.STATE_ALIVE and self.rect.colliderect(player.rect):
                 if player.bulletImpact(self.owner == self.OWNER_PLAYER, self.damage, self.owner_class):
                     self.destroy()
                     return
 
         # check for collisions with enemies
-        for enemy in enemies:
+        for enemy in self.game.enemies:
             if enemy.state == enemy.STATE_ALIVE and self.rect.colliderect(enemy.rect):
                 if enemy.bulletImpact(self.owner == self.OWNER_ENEMY, self.damage, self.owner_class):
                     self.destroy()
                     return
 
         # check for collision with castle
-        if castle.active and self.rect.colliderect(castle.rect):
-            castle.destroy()
+        if self.game.castle.active and self.rect.colliderect(self.game.castle.rect):
+            self.game.castle.destroy()
             self.destroy()
             return
 
     def explode(self):
         """ start bullets's explosion """
-        global screen
         if self.state != self.STATE_REMOVED:
             self.state = self.STATE_EXPLODING
-            self.explosion = Explosion([self.rect.left - 13, self.rect.top - 13], None, self.explosion_images)
+            self.explosion = Explosion(self.game, [self.rect.left - 13, self.rect.top - 13], 100, self.explosion_images)
 
     def destroy(self):
         self.state = self.STATE_REMOVED

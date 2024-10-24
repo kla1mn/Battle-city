@@ -5,11 +5,9 @@ from src.tank import Tank
 
 class Player(Tank):
 
-    def __init__(self, level, type, position=None, direction=None, filename=None):
+    def __init__(self, game, level, type, position=None, direction=None, filename=None):
 
-        Tank.__init__(self, level, type, position=None, direction=None, filename=None)
-
-        global sprites
+        Tank.__init__(self, game, level, type, position=None, direction=None, filename=None)
 
         if filename is None:
             filename = (0, 0, 16 * 2, 16 * 2)
@@ -31,21 +29,19 @@ class Player(Tank):
             "enemy3": 0
         }
 
-        self.image = sprites.subsurface(filename)
+        self.image = self.game.sprites.subsurface(filename)
         self.image_up = self.image
         self.image_left = pygame.transform.rotate(self.image, 90)
         self.image_down = pygame.transform.rotate(self.image, 180)
         self.image_right = pygame.transform.rotate(self.image, 270)
 
-        if direction == None:
+        if direction is None:
             self.rotate(self.DIR_UP, False)
         else:
             self.rotate(direction, False)
 
     def move(self, direction):
         """ move player if possible """
-
-        global players, enemies, bonuses
 
         if self.state == self.STATE_EXPLODING:
             if not self.explosion.active:
@@ -87,17 +83,17 @@ class Player(Tank):
             return
 
         # collisions with other players
-        for player in players:
+        for player in self.game.players:
             if player != self and player.state == player.STATE_ALIVE and player_rect.colliderect(player.rect) == True:
                 return
 
         # collisions with enemies
-        for enemy in enemies:
+        for enemy in self.game.enemies:
             if player_rect.colliderect(enemy.rect) == True:
                 return
 
         # collisions with bonuses
-        for bonus in bonuses:
+        for bonus in self.game.bonuses:
             if player_rect.colliderect(bonus.rect) == True:
                 self.bonus = bonus
 
