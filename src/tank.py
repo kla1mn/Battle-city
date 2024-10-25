@@ -75,12 +75,12 @@ class Tank:
 
         self.level = level
 
-        if position != None:
+        if position is not None:
             self.rect = pygame.Rect(position, (26, 26))
         else:
             self.rect = pygame.Rect(0, 0, 26, 26)
 
-        if direction == None:
+        if direction is None:
             self.direction = random.choice([self.DIR_RIGHT, self.DIR_DOWN, self.DIR_LEFT])
         else:
             self.direction = direction

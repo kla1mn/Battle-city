@@ -13,7 +13,6 @@ class Label:
             self.game.gtimer.add(duration, lambda: self.destroy(), 1)
 
     def draw(self):
-        """ draw label """
         self.game.screen.blit(self.font.render(self.text, False, (200, 200, 200)),
                     [self.position[0] + 4, self.position[1] + 8])
 

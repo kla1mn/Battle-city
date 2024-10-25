@@ -2,25 +2,23 @@ import pygame
 import os
 import sys
 import random
-from castle import Castle
-from level import Level
-from player import Player
-from enemy import Enemy
+
+from src.castle import Castle
+from src.level import Level
+from src.player import Player
+from src.enemy import Enemy
 from src.label import Label
-from timer import Timer
+from src.timer import Timer
 
 
 class Game:
-    # direction constants
     (DIR_UP, DIR_RIGHT, DIR_DOWN, DIR_LEFT) = range(4)
 
     TILE_SIZE = 16
 
     def __init__(self):
-        # Initialize Pygame
         pygame.init()
 
-        # Former global variables now as class attributes
         self.sprites = None
         self.screen = None
         self.players = []
@@ -56,7 +54,7 @@ class Game:
 
         pygame.display.set_caption("Battle City")
 
-        size = width, height = 480, 416
+        size = 480, 416
 
         if "-f" in sys.argv[1:]:
             self.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
@@ -64,10 +62,8 @@ class Game:
             self.screen = pygame.display.set_mode(size)
 
         self.clock = pygame.time.Clock()
-
-        # Load sprites
         self.sprites = pygame.transform.scale(pygame.image.load("../sprites/sprites.gif"), [192, 224])
-
+        pygame.display.set_icon(self.sprites.subsurface(0, 0, 13 * 2, 13 * 2))
         # Load sounds
         if self.play_sounds:
             pygame.mixer.init(44100, -16, 1, 512)
@@ -83,7 +79,7 @@ class Game:
         self.player_image = pygame.transform.rotate(self.sprites.subsurface(0, 0, 13 * 2, 13 * 2), 270)
 
         # Load font
-        self.font = pygame.font.Font("../fonts/prstart.ttf", 16)
+        self.font = pygame.font.Font("../fonts/font.ttf", 16)
 
         # Pre-render game over text
         self.im_game_over = pygame.Surface((64, 40))
@@ -336,9 +332,7 @@ class Game:
             if self.nr_of_players == 2:
                 x = 16 * self.TILE_SIZE + (self.TILE_SIZE * 2 - 26) / 2
                 y = 24 * self.TILE_SIZE + (self.TILE_SIZE * 2 - 26) / 2
-                player = Player(
-                    self, self.level, 0, [x, y], self.DIR_UP, (16 * 2, 0, 13 * 2, 13 * 2)
-                )
+                player = Player(self, self.level, 0, [x, y], self.DIR_UP, (16 * 2, 0, 13 * 2, 13 * 2))
                 player.controls = [102, 119, 100, 115, 97]
                 self.players.append(player)
 
@@ -350,9 +344,7 @@ class Game:
         player.reset()
 
         if clear_scores:
-            player.trophies = {
-                "bonus": 0, "enemy0": 0, "enemy1": 0, "enemy2": 0, "enemy3": 0
-            }
+            player.trophies = {"bonus": 0, "enemy0": 0, "enemy1": 0, "enemy2": 0, "enemy3": 0}
 
         self.shieldPlayer(player, True, 4000)
 
@@ -421,8 +413,8 @@ class Game:
         for enemy in self.enemies:
             enemy.draw()
 
-        for label in self.labels:
-            label.draw()
+        # for label in self.labels:
+        # label.draw()
 
         for player in self.players:
             player.draw()
@@ -452,22 +444,22 @@ class Game:
     def loadHiscore(self):
         filename = ".hiscore"
         if not os.path.isfile(filename):
-            return 20000
+            return 0
 
         with open(filename, "r") as f:
             hiscore = int(f.read())
 
-        if 19999 < hiscore < 1000000:
+        if hiscore < 1000000:
             return hiscore
         else:
             print("cheater =[")
             return 20000
 
-    def saveHiscore(self, hiscore):
+    def save_hiscore(self, hiscore) -> bool:
         try:
             with open(".hiscore", "w") as f:
                 f.write(str(hiscore))
-        except:
+        except FileExistsError or FileNotFoundError:
             print("Can't save hi-score")
             return False
         return True
@@ -490,10 +482,10 @@ class Game:
         # update hiscore if needed
         if self.players[0].score > hiscore:
             hiscore = self.players[0].score
-            self.saveHiscore(hiscore)
+            self.save_hiscore(hiscore)
         if self.nr_of_players == 2 and self.players[1].score > hiscore:
             hiscore = self.players[1].score
-            self.saveHiscore(hiscore)
+            self.save_hiscore(hiscore)
 
         img_tanks = [
             self.sprites.subsurface(32 * 2, 0, 13 * 2, 15 * 2),
@@ -634,10 +626,6 @@ class Game:
                         return
 
     def animateIntroScreen(self):
-        """ Slide intro (menu) screen from bottom to top
-        If Enter key is pressed, finish animation immediately
-        @return None
-        """
 
         self.drawIntroScreen(False)
         screen_cp = self.screen.copy()
