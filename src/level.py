@@ -54,7 +54,7 @@ class Level:
         # update these tiles
         self.updateObstacleRects()
 
-        self.game.gtimer.add(400, lambda: self.toggleWaves())
+        self.game.gtimer.add(10000, lambda: self.toggleWaves())
 
     def hitTile(self, pos, power=1, sound=False):
         """
