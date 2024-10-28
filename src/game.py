@@ -9,7 +9,7 @@ from src.enemy import Enemy
 from src.label import Label
 from src.timer import Timer
 
-from src.constants import TILE_SIZE, Direction, Tile
+from src.constants import Direction, Tile
 
 
 class Game:
@@ -108,9 +108,10 @@ class Game:
                         main_loop = False
 
         self.players.clear()
-        self.load_next_level()
+        self._load_next_level()
 
-    def load_next_level(self):
+    def _load_next_level(self):
+        from src.constants import BulletState
         self._clear_game_objects_for_next_level()
         self.stage += 1
         self.level = Level(self, self.stage)
@@ -128,9 +129,9 @@ class Game:
             self.sounds["gamestart"].play()
             self.gtimer.add(4330, lambda: self.sounds["background"].play(-1), 1)
 
-        self.reloadPlayers()
+        self._reload_players()
 
-        self.gtimer.add(3000, lambda: self.spawnEnemy())
+        self.gtimer.add(3000, lambda: self._spawn_enemy())
 
         self.game_over = False
         self.running = True
@@ -158,7 +159,7 @@ class Game:
                 if enemy.state == enemy.STATE_DEAD and not self.game_over and self.active:
                     self.enemies.remove(enemy)
                     if len(self.level.enemies_left) == 0 and len(self.enemies) == 0:
-                        self.finishLevel()
+                        self._finish_level()
                 else:
                     enemy.update(time_passed)
 
@@ -166,18 +167,18 @@ class Game:
                 for player in self.players:
                     if player.state == player.STATE_ALIVE:
                         if player.bonus is not None and player.side == player.SIDE_PLAYER:
-                            self.triggerBonus(player.bonus, player)
+                            self._trigger_bonus(player.bonus, player)
                             player.bonus = None
                     elif player.state == player.STATE_DEAD:
                         self.superpowers = 0
                         player.lives -= 1
                         if player.lives > 0:
-                            self.respawn_player(player)
+                            self._respawn_player(player)
                         else:
-                            self.gameOver()
+                            self._game_over()
 
             for bullet in self.bullets[:]:
-                if bullet.state == bullet.STATE_REMOVED:
+                if bullet.state == BulletState.Removed:
                     self.bullets.remove(bullet)
                 else:
                     bullet.update()
@@ -192,7 +193,7 @@ class Game:
 
             if not self.game_over:
                 if not self.castle.active:
-                    self.gameOver()
+                    self._game_over()
 
             self.gtimer.update(time_passed)
             self.draw()
@@ -201,10 +202,10 @@ class Game:
         from src.constants import ENEMIES_BY_LEVEL
 
         if self.stage <= 35:
-            enemies_l = ENEMIES_BY_LEVEL[self.stage - 1]
+            enemies = ENEMIES_BY_LEVEL[self.stage - 1]
         else:
-            enemies_l = ENEMIES_BY_LEVEL[34]
-        return enemies_l
+            enemies = ENEMIES_BY_LEVEL[34]
+        return enemies
 
     def _clear_game_objects_for_next_level(self):
         del self.bullets[:]
@@ -260,7 +261,7 @@ class Game:
         else:
             self.sounds["background"].play(-1)
 
-    def triggerBonus(self, bonus, player):
+    def _trigger_bonus(self, bonus, player):
         if self.play_sounds:
             self.sounds["bonus"].play()
 
@@ -271,7 +272,7 @@ class Game:
             for enemy in self.enemies:
                 enemy.explode()
         elif bonus.bonus == bonus.BONUS_HELMET:
-            self.shieldPlayer(player, True, 10000)
+            self._cover_player_with_shield(player, True, 10000)
         elif bonus.bonus == bonus.BONUS_SHOVEL:
             self.level.build_castle(Tile.Steel)
             self.gtimer.add(10000, lambda: self.level.build_castle(Tile.Brick), 1)
@@ -288,7 +289,7 @@ class Game:
 
         self.labels.append(Label(self, bonus.rect.topleft, "500", 500))
 
-    def shieldPlayer(self, player, shield=True, duration=None):
+    def _cover_player_with_shield(self, player, shield=True, duration=None):
         player.shielded = shield
         if shield:
             player.timer_uuid_shield = self.gtimer.add(100, lambda: player.toggleShieldImage())
@@ -296,9 +297,9 @@ class Game:
             self.gtimer.destroy(player.timer_uuid_shield)
 
         if shield and duration is not None:
-            self.gtimer.add(duration, lambda: self.shieldPlayer(player, False), 1)
+            self.gtimer.add(duration, lambda: self._cover_player_with_shield(player, False), 1)
 
-    def spawnEnemy(self):
+    def _spawn_enemy(self):
         if len(self.enemies) >= self.level.max_active_enemies:
             return
         if len(self.level.enemies_left) < 1 or self.time_freeze:
@@ -306,7 +307,8 @@ class Game:
         enemy = Enemy(self, self.level, 1)
         self.enemies.append(enemy)
 
-    def reloadPlayers(self):
+    def _reload_players(self):
+        from src.constants import TILE_SIZE
         if len(self.players) == 0:
             # first player
             x = 8 * TILE_SIZE + (TILE_SIZE * 2 - 26) / 2
@@ -325,17 +327,17 @@ class Game:
 
         for player in self.players:
             player.level = self.level
-            self.respawn_player(player, True)
+            self._respawn_player(player, True)
 
-    def respawn_player(self, player, clear_scores=False):
+    def _respawn_player(self, player, clear_scores=False):
         player.reset()
 
         if clear_scores:
             player.trophies = {"bonus": 0, "enemy0": 0, "enemy1": 0, "enemy2": 0, "enemy3": 0}
 
-        self.shieldPlayer(player, True, 4000)
+        self._cover_player_with_shield(player, True, 4000)
 
-    def gameOver(self):
+    def _game_over(self):
         if self.play_sounds:
             for sound in self.sounds.values():
                 sound.stop()
@@ -346,7 +348,7 @@ class Game:
         self.game_over = True
         self.gtimer.add(3000, lambda: self.showScores(), 1)
 
-    def finishLevel(self):
+    def _finish_level(self):
         if self.play_sounds:
             self.sounds["background"].stop()
 
@@ -355,7 +357,7 @@ class Game:
 
         print(f"Stage {self.stage} completed")
 
-    def drawSidebar(self):
+    def _draw_sidebar(self):
         x = 416
         y = 0
         self.screen.fill([100, 100, 100], pygame.Rect([416, 0], [64, 416]))
@@ -417,7 +419,7 @@ class Game:
                 self.game_over_y -= 4
             self.screen.blit(self.im_game_over, [176, self.game_over_y])  # 176=(416-64)/2
 
-        self.drawSidebar()
+        self._draw_sidebar()
 
         pygame.display.flip()
 
@@ -580,7 +582,7 @@ class Game:
             self.stage = 0
             self.load_game_over_screen()
         else:
-            self.load_next_level()
+            self._load_next_level()
 
     def load_game_over_screen(self):
         self.running = False

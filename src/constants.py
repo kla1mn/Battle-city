@@ -49,3 +49,25 @@ class Tile(IntEnum):
     Water = 3
     Grass = 4
     Frozen = 5
+
+
+class CastleState(IntEnum):
+    Standing = 0
+    Destroyed = 1
+    Exploding = 2
+
+
+class Owner(IntEnum):
+    Player = 0
+    Enemy = 1
+
+
+class BulletState(IntEnum):
+    Removed = 0
+    Active = 1
+    Exploding = 2
+
+
+class BulletPower(IntEnum):
+    Regular = 0
+    Powerful = 1

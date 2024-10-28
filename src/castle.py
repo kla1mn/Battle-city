@@ -2,46 +2,37 @@ import pygame
 
 from src.explosion import Explosion
 
+from src.constants import CastleState
+
 
 class Castle:
-    """ Player's castle/fortress """
-
-    (STATE_STANDING, STATE_DESTROYED, STATE_EXPLODING) = range(3)
-
     def __init__(self, game):
         self.game = game
-
-        # images
+        self.explosion = None
+        self.active = None
+        self.image = None
+        self.state = None
         self.img_undamaged = self.game.sprites.subsurface(0, 15 * 2, 16 * 2, 16 * 2)
         self.img_destroyed = self.game.sprites.subsurface(16 * 2, 15 * 2, 16 * 2, 16 * 2)
-
-        # init position
         self.rect = pygame.Rect(12 * 16, 24 * 16, 32, 32)
-
-        # start w/ undamaged and shiny castle
         self.rebuild()
 
     def draw(self):
-        """ Draw castle """
-
         self.game.screen.blit(self.image, self.rect.topleft)
-
-        if self.state == self.STATE_EXPLODING:
+        if self.state == CastleState.Exploding:
             if not self.explosion.active:
-                self.state = self.STATE_DESTROYED
+                self.state = CastleState.Destroyed
                 del self.explosion
             else:
                 self.explosion.draw()
 
     def rebuild(self):
-        """ Reset castle """
-        self.state = self.STATE_STANDING
+        self.state = CastleState.Standing
         self.image = self.img_undamaged
         self.active = True
 
     def destroy(self):
-        """ Destroy castle """
-        self.state = self.STATE_EXPLODING
+        self.state = CastleState.Exploding
         self.explosion = Explosion(self.game, self.rect.topleft)
         self.image = self.img_destroyed
         self.active = False

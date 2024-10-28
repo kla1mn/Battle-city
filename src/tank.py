@@ -6,6 +6,8 @@ from src.bullet import Bullet
 from src.explosion import Explosion
 from src.label import Label
 
+from src.constants import BulletState
+
 
 class Tank:
     # possible directions
@@ -157,7 +159,7 @@ class Tank:
         if not forced:
             active_bullets = 0
             for bullet in self.game.bullets:
-                if bullet.owner_class == self and bullet.state == bullet.STATE_ACTIVE:
+                if bullet.owner_class == self and bullet.state == BulletState.Active:
                     active_bullets += 1
             if active_bullets >= self.max_active_bullets:
                 return False
