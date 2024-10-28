@@ -3,6 +3,7 @@ import random
 import pygame
 
 from src.bonus import Bonus
+from src.constants import TILE_SIZE
 from src.tank import Tank
 
 
@@ -118,11 +119,9 @@ class Enemy(Tank):
 
     def getFreeSpawningPosition(self):
         available_positions = [
-            [(self.level.TILE_SIZE * 2 - self.rect.width) / 2, (self.level.TILE_SIZE * 2 - self.rect.height) / 2],
-            [12 * self.level.TILE_SIZE + (self.level.TILE_SIZE * 2 - self.rect.width) / 2,
-             (self.level.TILE_SIZE * 2 - self.rect.height) / 2],
-            [24 * self.level.TILE_SIZE + (self.level.TILE_SIZE * 2 - self.rect.width) / 2,
-             (self.level.TILE_SIZE * 2 - self.rect.height) / 2]
+            [(TILE_SIZE * 2 - self.rect.width) / 2, (TILE_SIZE * 2 - self.rect.height) / 2],
+            [12 * TILE_SIZE + (TILE_SIZE * 2 - self.rect.width) / 2, (TILE_SIZE * 2 - self.rect.height) / 2],
+            [24 * TILE_SIZE + (TILE_SIZE * 2 - self.rect.width) / 2, (TILE_SIZE * 2 - self.rect.height) / 2]
         ]
 
         random.shuffle(available_positions)

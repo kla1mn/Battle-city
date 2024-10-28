@@ -9,7 +9,7 @@ from src.enemy import Enemy
 from src.label import Label
 from src.timer import Timer
 
-from src.constants import TILE_SIZE, Direction, CURRENT_LEVEL
+from src.constants import TILE_SIZE, Direction, Tile
 
 
 class Game:
@@ -29,20 +29,19 @@ class Game:
         self.sounds = {}
 
         self.gtimer = Timer()
+        self.clock = None
 
-        # Game state variables
         self.game_over = False
         self.running = True
         self.active = True
         self.time_freeze = False
 
-        # Stage and score variables
-        self.stage = CURRENT_LEVEL
+        self.stage = 0
         self.players_number = 1
 
-        self.initialize_game()
+        self._initialize_game()
 
-    def initialize_game(self):
+    def _initialize_game(self):
         os.environ['SDL_VIDEO_WINDOW_POS'] = 'center'
 
         if self.play_sounds:
@@ -57,12 +56,10 @@ class Game:
         self.clock = pygame.time.Clock()
         self.sprites = pygame.transform.scale(pygame.image.load("../sprites/sprites.gif"), [192, 224])
         pygame.display.set_icon(self.sprites.subsurface(0, 0, 13 * 2, 13 * 2))
-        # Load sounds
         if self.play_sounds:
             pygame.mixer.init(44100, -16, 1, 512)
-            self.load_sounds()
+            self._load_sounds()
 
-        # Initialize castle
         self.castle = Castle(self)
 
         # Load images
@@ -81,7 +78,7 @@ class Game:
         self.im_game_over.blit(self.font.render("OVER", False, (127, 64, 64)), [0, 20])
         self.game_over_y = 416 + 40
 
-    def load_sounds(self):
+    def _load_sounds(self):
         sound_names = ["gamestart", "gameover", "score", "background", "fire", "bonus", "explosion", "brick", "steel"]
         for name in sound_names:
             self.sounds[name] = pygame.mixer.Sound(f"../sounds/{name}.ogg")
@@ -115,7 +112,7 @@ class Game:
 
     def load_next_level(self):
         self._clear_game_objects_for_next_level()
-
+        self.stage += 1
         self.level = Level(self, self.stage)
         self.time_freeze = False
 
@@ -140,7 +137,6 @@ class Game:
         self.active = True
 
         self.draw()
-        self.stage += 1
 
         while self.running:
             time_passed = self.clock.tick(50)
@@ -149,16 +145,16 @@ class Game:
                 if event.type == pygame.QUIT:
                     quit()
                 elif event.type == pygame.KEYDOWN and not self.game_over and self.active:
-                    self.handleKeyDown(event)
+                    self._handle_key_down(event)
                 elif event.type == pygame.KEYUP and not self.game_over and self.active:
-                    self.handleKeyUp(event)
+                    self._handle_key_up(event)
 
             for player in self.players:
                 if player.state == player.STATE_ALIVE and not self.game_over and self.active:
-                    self.handlePlayerMovement(player)
+                    self._handle_player_movement(player)
                 player.update(time_passed)
 
-            for enemy in self.enemies[:]:
+            for enemy in self.enemies:
                 if enemy.state == enemy.STATE_DEAD and not self.game_over and self.active:
                     self.enemies.remove(enemy)
                     if len(self.level.enemies_left) == 0 and len(self.enemies) == 0:
@@ -217,11 +213,11 @@ class Game:
         self.castle.rebuild()
         del self.gtimer.timers[:]
 
-    def handleKeyDown(self, event):
+    def _handle_key_down(self, event):
         if event.key == pygame.K_q:
             quit()
         elif event.key == pygame.K_m:
-            self.toggleSound()
+            self._toggle_sound()
 
         for player in self.players:
             if player.state == player.STATE_ALIVE:
@@ -236,7 +232,7 @@ class Game:
                     elif 1 <= index <= 4:
                         player.pressed[index - 1] = True
 
-    def handleKeyUp(self, event):
+    def _handle_key_up(self, event):
         for player in self.players:
             if player.state == player.STATE_ALIVE:
                 try:
@@ -247,7 +243,7 @@ class Game:
                     if 1 <= index <= 4:
                         player.pressed[index - 1] = False
 
-    def handlePlayerMovement(self, player):
+    def _handle_player_movement(self, player):
         if player.pressed[0]:
             player.move(Direction.Up)
         elif player.pressed[1]:
@@ -257,7 +253,7 @@ class Game:
         elif player.pressed[3]:
             player.move(Direction.Left)
 
-    def toggleSound(self):
+    def _toggle_sound(self):
         self.play_sounds = not self.play_sounds
         if not self.play_sounds:
             pygame.mixer.stop()
@@ -277,8 +273,8 @@ class Game:
         elif bonus.bonus == bonus.BONUS_HELMET:
             self.shieldPlayer(player, True, 10000)
         elif bonus.bonus == bonus.BONUS_SHOVEL:
-            self.level.buildFortress(self.level.TILE_STEEL)
-            self.gtimer.add(10000, lambda: self.level.buildFortress(self.level.TILE_BRICK), 1)
+            self.level.build_castle(Tile.Steel)
+            self.gtimer.add(10000, lambda: self.level.build_castle(Tile.Brick), 1)
         elif bonus.bonus == bonus.BONUS_STAR:
             player.superpowers += 1
             if player.superpowers == 2:
@@ -348,7 +344,6 @@ class Game:
         self.game_over_y = 416 + 40
 
         self.game_over = True
-        self.stage = 1
         self.gtimer.add(3000, lambda: self.showScores(), 1)
 
     def finishLevel(self):
@@ -358,7 +353,7 @@ class Game:
         self.active = False
         self.gtimer.add(3000, lambda: self.showScores(), 1)
 
-        print(f"Stage {self.stage - 1} completed")
+        print(f"Stage {self.stage} completed")
 
     def drawSidebar(self):
         x = 416
@@ -396,8 +391,7 @@ class Game:
     def draw(self):
         self.screen.fill([0, 0, 0])
 
-        self.level.draw([self.level.TILE_EMPTY, self.level.TILE_BRICK, self.level.TILE_STEEL, self.level.TILE_FROZE,
-                         self.level.TILE_WATER])
+        self.level.draw([Tile.Empty, Tile.Brick, Tile.Steel, Tile.Frozen, Tile.Water])
 
         self.castle.draw()
 
@@ -407,13 +401,16 @@ class Game:
         for player in self.players:
             player.draw()
 
+        for label in self.labels:
+            label.draw()
+
         for bullet in self.bullets:
             bullet.draw()
 
         for bonus in self.bonuses:
             bonus.draw()
 
-        self.level.draw([self.level.TILE_GRASS])
+        self.level.draw([Tile.Grass])
 
         if self.game_over:
             if self.game_over_y > 188:
@@ -453,12 +450,7 @@ class Game:
         return True
 
     def showScores(self):
-        """ Show level scores """
-
-        # stop game main loop (if any)
         self.running = False
-
-        # clear all timers
         del self.gtimer.timers[:]
 
         if self.play_sounds:
@@ -585,6 +577,7 @@ class Game:
         self.clock.tick(2)
 
         if self.game_over:
+            self.stage = 0
             self.load_game_over_screen()
         else:
             self.load_next_level()
@@ -597,16 +590,15 @@ class Game:
         pygame.display.flip()
 
         while True:
+            self.clock.tick(50)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     quit()
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_q:
-                        quit()
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
-                        self.load_menu()
-                        return
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
+                    quit()
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                    self.load_menu()
+                    return
 
     def load_intro_screen(self):
         self.draw_intro_screen(False)

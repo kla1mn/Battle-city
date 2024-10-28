@@ -1,17 +1,12 @@
 import os
-
 import pygame
 
 from src.my_rectangle import MyRect
 
+from src.constants import TILE_SIZE, Tile
+
 
 class Level:
-    # tile constants
-    (TILE_EMPTY, TILE_BRICK, TILE_STEEL, TILE_WATER, TILE_GRASS, TILE_FROZE) = range(6)
-
-    # tile width/height in px
-    TILE_SIZE = 16
-
     def __init__(self, game, level_nr=None):
         """ There are total 35 different levels. If level_nr is larger than 35, loop over
         to next according level so, for example, if level_nr ir 37, then load level 2 """
@@ -65,13 +60,13 @@ class Level:
 
         for tile in self.mapr:
             if tile.topleft == pos:
-                if tile.type == self.TILE_BRICK:
+                if tile.type == Tile.Brick:
                     if self.game.play_sounds and sound:
                         self.game.sounds["brick"].play()
                     self.mapr.remove(tile)
                     self.updateObstacleRects()
                     return True
-                elif tile.type == self.TILE_STEEL:
+                elif tile.type == Tile.Steel:
                     if self.game.play_sounds and sound:
                         self.game.sounds["steel"].play()
                     if power == 2:
@@ -103,37 +98,37 @@ class Level:
         for row in data:
             for ch in row:
                 if ch == "#":
-                    self.mapr.append(MyRect(x, y, self.TILE_SIZE, self.TILE_SIZE, self.TILE_BRICK))
+                    self.mapr.append(MyRect(x, y, TILE_SIZE, TILE_SIZE, Tile.Brick))
                 elif ch == "@":
-                    self.mapr.append(MyRect(x, y, self.TILE_SIZE, self.TILE_SIZE, self.TILE_STEEL))
+                    self.mapr.append(MyRect(x, y, TILE_SIZE, TILE_SIZE, Tile.Steel))
                 elif ch == "~":
-                    self.mapr.append(MyRect(x, y, self.TILE_SIZE, self.TILE_SIZE, self.TILE_WATER))
+                    self.mapr.append(MyRect(x, y, TILE_SIZE, TILE_SIZE, Tile.Water))
                 elif ch == "%":
-                    self.mapr.append(MyRect(x, y, self.TILE_SIZE, self.TILE_SIZE, self.TILE_GRASS))
+                    self.mapr.append(MyRect(x, y, TILE_SIZE, TILE_SIZE, Tile.Grass))
                 elif ch == "-":
-                    self.mapr.append(MyRect(x, y, self.TILE_SIZE, self.TILE_SIZE, self.TILE_FROZE))
-                x += self.TILE_SIZE
+                    self.mapr.append(MyRect(x, y, TILE_SIZE, TILE_SIZE, Tile.Frozen))
+                x += TILE_SIZE
             x = 0
-            y += self.TILE_SIZE
+            y += TILE_SIZE
         return True
 
     def draw(self, tiles=None):
         """ Draw specified map on top of existing surface """
 
         if tiles is None:
-            tiles = [self.TILE_BRICK, self.TILE_STEEL, self.TILE_WATER, self.TILE_GRASS, self.TILE_FROZE]
+            tiles = [Tile.Brick, Tile.Steel, Tile.Water, Tile.Grass, Tile.Frozen]
 
         for tile in self.mapr:
             if tile.type in tiles:
-                if tile.type == self.TILE_BRICK:
+                if tile.type == Tile.Brick:
                     self.game.screen.blit(self.tile_brick, tile.topleft)
-                elif tile.type == self.TILE_STEEL:
+                elif tile.type == Tile.Steel:
                     self.game.screen.blit(self.tile_steel, tile.topleft)
-                elif tile.type == self.TILE_WATER:
+                elif tile.type == Tile.Water:
                     self.game.screen.blit(self.tile_water, tile.topleft)
-                elif tile.type == self.TILE_FROZE:
+                elif tile.type == Tile.Frozen:
                     self.game.screen.blit(self.tile_froze, tile.topleft)
-                elif tile.type == self.TILE_GRASS:
+                elif tile.type == Tile.Grass:
                     self.game.screen.blit(self.tile_grass, tile.topleft)
 
     def updateObstacleRects(self):
@@ -143,32 +138,19 @@ class Level:
         self.obstacle_rects = [self.game.castle.rect]
 
         for tile in self.mapr:
-            if tile.type in (self.TILE_BRICK, self.TILE_STEEL, self.TILE_WATER):
+            if tile.type in (Tile.Brick, Tile.Steel, Tile.Water):
                 self.obstacle_rects.append(tile)
 
-    def buildFortress(self, tile):
-        """ Build walls around castle made from tile """
-
-        positions = [
-            (11 * self.TILE_SIZE, 23 * self.TILE_SIZE),
-            (11 * self.TILE_SIZE, 24 * self.TILE_SIZE),
-            (11 * self.TILE_SIZE, 25 * self.TILE_SIZE),
-            (14 * self.TILE_SIZE, 23 * self.TILE_SIZE),
-            (14 * self.TILE_SIZE, 24 * self.TILE_SIZE),
-            (14 * self.TILE_SIZE, 25 * self.TILE_SIZE),
-            (12 * self.TILE_SIZE, 23 * self.TILE_SIZE),
-            (13 * self.TILE_SIZE, 23 * self.TILE_SIZE)
-        ]
-
+    def build_castle(self, tile):
+        from src.constants import CASTLE_TILES
         obsolete = []
-
         for i, rect in enumerate(self.mapr):
-            if rect.topleft in positions:
+            if rect.topleft in CASTLE_TILES:
                 obsolete.append(rect)
         for rect in obsolete:
             self.mapr.remove(rect)
 
-        for pos in positions:
-            self.mapr.append(MyRect(pos[0], pos[1], self.TILE_SIZE, self.TILE_SIZE, tile))
+        for pos in CASTLE_TILES:
+            self.mapr.append(MyRect(pos[0], pos[1], TILE_SIZE, TILE_SIZE, tile))
 
         self.updateObstacleRects()

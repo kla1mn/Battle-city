@@ -244,7 +244,7 @@ class Tank:
                     if self.game.play_sounds:
                         self.game.sounds["explosion"].play()
 
-                    self.game.labels.append(Label(self, self.rect.topleft, str(points), 500))
+                    self.game.labels.append(Label(self.game, self.rect.topleft, str(points), 500))
 
                 self.explode()
             return True
