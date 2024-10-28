@@ -10,15 +10,10 @@ from src.tank import Tank
 class Enemy(Tank):
     (TYPE_BASIC, TYPE_FAST, TYPE_POWER, TYPE_ARMOR) = range(4)
 
-    def __init__(self, game, level, type, position=None, direction=None, filename=None):
-
+    def __init__(self, game, level, type, position=None):
         Tank.__init__(self, game, level, type, position=None, direction=None, filename=None)
         self.game = game
-
-        # if true, do not fire
         self.bullet_queued = False
-
-        # chose type on random
         if len(level.enemies_left) > 0:
             self.type = level.enemies_left.pop()
         else:

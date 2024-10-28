@@ -519,7 +519,8 @@ class Game:
 
         pygame.display.flip()
 
-        self.clock.tick(2)
+        self.clock.tick(1)
+        self.clock.tick(1)
 
         interval = 5
 
@@ -576,7 +577,8 @@ class Game:
 
         pygame.display.flip()
 
-        self.clock.tick(2)
+        self.clock.tick(1)
+        self.clock.tick(1)
 
         if self.game_over:
             self.stage = 0

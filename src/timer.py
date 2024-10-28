@@ -1,41 +1,36 @@
-import uuid
+import logging
 
 
 class Timer:
     def __init__(self):
         self.timers = []
 
-    def add(self, interval, f, repeat=-1):
-        options = {
+    def add(self, interval, callback, repeat=-1):
+        self.timers.append({
             "interval": interval,
-            "callback": f,
+            "callback": callback,
             "repeat": repeat,
             "times": 0,
-            "time": 0,
-            "uuid": uuid.uuid4()
-        }
-        self.timers.append(options)
-
-        return options["uuid"]
-
-    def destroy(self, uuid_nr):
-        for timer in self.timers:
-            if timer["uuid"] == uuid_nr:
-                self.timers.remove(timer)
-                return
+            "time": 0
+        })
 
     def update(self, time_passed):
+        timers_to_remove = []
         for timer in self.timers:
             timer["time"] += time_passed
-            if timer["time"] > timer["interval"]:
+            while timer["time"] >= timer["interval"]:
                 timer["time"] -= timer["interval"]
                 timer["times"] += 1
-                if -1 < timer["repeat"] == timer["times"]:
-                    self.timers.remove(timer)
                 try:
                     timer["callback"]()
-                except:
-                    try:
-                        self.timers.remove(timer)
-                    except:
-                        pass
+                except Exception as e:
+                    logging.error(f"Error in timer callback: {e}")
+                    timers_to_remove.append(timer)
+                    break
+
+                if timer["repeat"] != -1 and timer["times"] >= timer["repeat"]:
+                    timers_to_remove.append(timer)
+                    break
+
+        for timer in timers_to_remove:
+            self.timers.remove(timer)
