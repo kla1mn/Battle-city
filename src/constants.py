@@ -57,7 +57,7 @@ class CastleState(IntEnum):
     Exploding = 2
 
 
-class Owner(IntEnum):
+class GameSide(IntEnum):
     Player = 0
     Enemy = 1
 
@@ -71,3 +71,10 @@ class BulletState(IntEnum):
 class BulletPower(IntEnum):
     Regular = 0
     Powerful = 1
+
+
+class TankState(IntEnum):
+    Spawning = 0
+    Dead = 1
+    Alive = 2
+    Exploding = 3

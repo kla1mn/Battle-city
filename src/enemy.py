@@ -3,7 +3,7 @@ import random
 import pygame
 
 from src.bonus import Bonus
-from src.constants import TILE_SIZE
+from src.constants import TILE_SIZE, Direction, TankState
 from src.tank import Tank
 
 
@@ -11,13 +11,13 @@ class Enemy(Tank):
     (TYPE_BASIC, TYPE_FAST, TYPE_POWER, TYPE_ARMOR) = range(4)
 
     def __init__(self, game, level, type, position=None):
-        Tank.__init__(self, game, level, type, position=None, direction=None, filename=None)
+        Tank.__init__(self, game, level, type, position=None, direction=None)
         self.game = game
         self.bullet_queued = False
         if len(level.enemies_left) > 0:
             self.type = level.enemies_left.pop()
         else:
-            self.state = self.STATE_DEAD
+            self.state = TankState.Dead
             return
 
         if self.type == self.TYPE_BASIC:
@@ -72,7 +72,7 @@ class Enemy(Tank):
         if position is None:
             self.rect.topleft = self.getFreeSpawningPosition()
             if not self.rect.topleft:
-                self.state = self.STATE_DEAD
+                self.state = TankState.Dead
                 return
 
         # list of map coords where tank should go next
@@ -87,7 +87,7 @@ class Enemy(Tank):
 
     def toggleFlash(self):
         """ Toggle flash state """
-        if self.state not in (self.STATE_ALIVE, self.STATE_SPAWNING):
+        if self.state not in (TankState.Alive, TankState.Spawning):
             self.game.gtimer.destroy(self.timer_uuid_flash)
             return
         self.flash = not self.flash
@@ -151,7 +151,7 @@ class Enemy(Tank):
     def move(self):
         """ move enemy if possible """
 
-        if self.state != self.STATE_ALIVE or self.paused or self.paralised:
+        if self.state != TankState.Alive or self.paused or self.paralised:
             return
 
         if not self.path:
@@ -160,19 +160,19 @@ class Enemy(Tank):
         new_position = self.path.pop(0)
 
         # move enemy
-        if self.direction == self.DIR_UP:
+        if self.direction == Direction.Up:
             if new_position[1] < 0:
                 self.path = self.generatePath(self.direction, True)
                 return
-        elif self.direction == self.DIR_RIGHT:
+        elif self.direction == Direction.Right:
             if new_position[0] > (416 - 26):
                 self.path = self.generatePath(self.direction, True)
                 return
-        elif self.direction == self.DIR_DOWN:
+        elif self.direction == Direction.Down:
             if new_position[1] > (416 - 26):
                 self.path = self.generatePath(self.direction, True)
                 return
-        elif self.direction == self.DIR_LEFT:
+        elif self.direction == Direction.Left:
             if new_position[0] < 0:
                 self.path = self.generatePath(self.direction, True)
                 return
@@ -208,17 +208,17 @@ class Enemy(Tank):
 
     def update(self, time_passed):
         Tank.update(self, time_passed)
-        if self.state == self.STATE_ALIVE and not self.paused:
+        if self.state == TankState.Alive and not self.paused:
             self.move()
 
     def generatePath(self, direction=None, fix_direction=False):
         """ If direction is specified, try continue that way, otherwise choose at random
         """
 
-        all_directions = [self.DIR_UP, self.DIR_RIGHT, self.DIR_DOWN, self.DIR_LEFT]
+        all_directions = [Direction.Up, Direction.Right, Direction.Down, Direction.Left]
 
         if direction is None:
-            if self.direction in [self.DIR_UP, self.DIR_RIGHT]:
+            if self.direction in [Direction.Up, Direction.Right]:
                 opposite_direction = self.direction + 2
             else:
                 opposite_direction = self.direction - 2
@@ -227,12 +227,12 @@ class Enemy(Tank):
             directions.remove(opposite_direction)
             directions.append(opposite_direction)
         else:
-            if direction in [self.DIR_UP, self.DIR_RIGHT]:
+            if direction in [Direction.Up, Direction.Right]:
                 opposite_direction = direction + 2
             else:
                 opposite_direction = direction - 2
 
-            if direction in [self.DIR_UP, self.DIR_RIGHT]:
+            if direction in [Direction.Up, Direction.Right]:
                 opposite_direction = direction + 2
             else:
                 opposite_direction = direction - 2
@@ -250,22 +250,22 @@ class Enemy(Tank):
         new_direction = None
 
         for direction in directions:
-            if direction == self.DIR_UP and y > 1:
+            if direction == Direction.Up and y > 1:
                 new_pos_rect = self.rect.move(0, -8)
                 if new_pos_rect.collidelist(self.level.obstacle_rects) == -1:
                     new_direction = direction
                     break
-            elif direction == self.DIR_RIGHT and x < 24:
+            elif direction == Direction.Right and x < 24:
                 new_pos_rect = self.rect.move(8, 0)
                 if new_pos_rect.collidelist(self.level.obstacle_rects) == -1:
                     new_direction = direction
                     break
-            elif direction == self.DIR_DOWN and y < 24:
+            elif direction == Direction.Down and y < 24:
                 new_pos_rect = self.rect.move(0, 8)
                 if new_pos_rect.collidelist(self.level.obstacle_rects) == -1:
                     new_direction = direction
                     break
-            elif direction == self.DIR_LEFT and x > 1:
+            elif direction == Direction.Left and x > 1:
                 new_pos_rect = self.rect.move(-8, 0)
                 if new_pos_rect.collidelist(self.level.obstacle_rects) == -1:
                     new_direction = direction
@@ -287,7 +287,7 @@ class Enemy(Tank):
         x = self.rect.left
         y = self.rect.top
 
-        if new_direction in (self.DIR_RIGHT, self.DIR_LEFT):
+        if new_direction in (Direction.Right, Direction.Left):
             axis_fix = self.nearest(y, 16) - y
         else:
             axis_fix = self.nearest(x, 16) - x
@@ -295,16 +295,16 @@ class Enemy(Tank):
 
         pixels = self.nearest(random.randint(1, 12) * 32, 32) + axis_fix + 3
 
-        if new_direction == self.DIR_UP:
+        if new_direction == Direction.Up:
             for px in range(0, pixels, self.speed):
                 positions.append([x, y - px])
-        elif new_direction == self.DIR_RIGHT:
+        elif new_direction == Direction.Right:
             for px in range(0, pixels, self.speed):
                 positions.append([x + px, y])
-        elif new_direction == self.DIR_DOWN:
+        elif new_direction == Direction.Down:
             for px in range(0, pixels, self.speed):
                 positions.append([x, y + px])
-        elif new_direction == self.DIR_LEFT:
+        elif new_direction == Direction.Left:
             for px in range(0, pixels, self.speed):
                 positions.append([x - px, y])
 

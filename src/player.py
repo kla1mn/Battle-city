@@ -2,12 +2,13 @@ import pygame
 
 from src.tank import Tank
 
+from src.constants import Direction, TankState
+
 
 class Player(Tank):
-
     def __init__(self, game, level, type, position=None, direction=None, filename=None):
 
-        Tank.__init__(self, game, level, type, position=None, direction=None, filename=None)
+        Tank.__init__(self, game, level, type, position=None, direction=None)
 
         if filename is None:
             filename = (0, 0, 16 * 2, 16 * 2)
@@ -36,19 +37,19 @@ class Player(Tank):
         self.image_right = pygame.transform.rotate(self.image, 270)
 
         if direction is None:
-            self.rotate(self.DIR_UP, False)
+            self.rotate(Direction.Up, False)
         else:
             self.rotate(direction, False)
 
     def move(self, direction):
         """ move player if possible """
 
-        if self.state == self.STATE_EXPLODING:
+        if self.state == TankState.Exploding:
             if not self.explosion.active:
-                self.state = self.STATE_DEAD
+                self.state = TankState.Dead
                 del self.explosion
 
-        if self.state != self.STATE_ALIVE:
+        if self.state != TankState.Alive:
             return
 
         # rotate player
@@ -58,20 +59,21 @@ class Player(Tank):
         if self.paralised:
             return
 
+        new_position = [0, 0]
         # move player
-        if direction == self.DIR_UP:
+        if direction == Direction.Up:
             new_position = [self.rect.left, self.rect.top - self.speed]
             if new_position[1] < 0:
                 return
-        elif direction == self.DIR_RIGHT:
+        elif direction == Direction.Right:
             new_position = [self.rect.left + self.speed, self.rect.top]
             if new_position[0] > (416 - 26):
                 return
-        elif direction == self.DIR_DOWN:
+        elif direction == Direction.Down:
             new_position = [self.rect.left, self.rect.top + self.speed]
             if new_position[1] > (416 - 26):
                 return
-        elif direction == self.DIR_LEFT:
+        elif direction == Direction.Left:
             new_position = [self.rect.left - self.speed, self.rect.top]
             if new_position[0] < 0:
                 return
@@ -84,7 +86,7 @@ class Player(Tank):
 
         # collisions with other players
         for player in self.game.players:
-            if player != self and player.state == player.STATE_ALIVE and player_rect.colliderect(player.rect) == True:
+            if player != self and player.state == TankState.Alive and player_rect.colliderect(player.rect) == True:
                 return
 
         # collisions with enemies
@@ -110,4 +112,4 @@ class Player(Tank):
         self.paralised = False
         self.paused = False
         self.pressed = [False] * 4
-        self.state = self.STATE_ALIVE
+        self.state = TankState.Alive

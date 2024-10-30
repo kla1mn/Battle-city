@@ -9,7 +9,7 @@ from src.enemy import Enemy
 from src.label import Label
 from src.timer import Timer
 
-from src.constants import Direction, Tile
+from src.constants import Direction, Tile, GameSide, TankState
 
 
 class Game:
@@ -151,12 +151,12 @@ class Game:
                     self._handle_key_up(event)
 
             for player in self.players:
-                if player.state == player.STATE_ALIVE and not self.game_over and self.active:
+                if player.state == TankState.Alive and not self.game_over and self.active:
                     self._handle_player_movement(player)
                 player.update(time_passed)
 
             for enemy in self.enemies:
-                if enemy.state == enemy.STATE_DEAD and not self.game_over and self.active:
+                if enemy.state == TankState.Dead and not self.game_over and self.active:
                     self.enemies.remove(enemy)
                     if len(self.level.enemies_left) == 0 and len(self.enemies) == 0:
                         self._finish_level()
@@ -165,11 +165,11 @@ class Game:
 
             if not self.game_over and self.active:
                 for player in self.players:
-                    if player.state == player.STATE_ALIVE:
-                        if player.bonus is not None and player.side == player.SIDE_PLAYER:
+                    if player.state == TankState.Alive:
+                        if player.bonus is not None and player.side == GameSide.Player:
                             self._trigger_bonus(player.bonus, player)
                             player.bonus = None
-                    elif player.state == player.STATE_DEAD:
+                    elif player.state == TankState.Dead:
                         self.superpowers = 0
                         player.lives -= 1
                         if player.lives > 0:
@@ -221,7 +221,7 @@ class Game:
             self._toggle_sound()
 
         for player in self.players:
-            if player.state == player.STATE_ALIVE:
+            if player.state == TankState.Alive:
                 try:
                     index = player.controls.index(event.key)
                 except ValueError:
@@ -235,7 +235,7 @@ class Game:
 
     def _handle_key_up(self, event):
         for player in self.players:
-            if player.state == player.STATE_ALIVE:
+            if player.state == TankState.Alive:
                 try:
                     index = player.controls.index(event.key)
                 except ValueError:

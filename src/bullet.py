@@ -2,7 +2,7 @@ import pygame
 
 from src.explosion import Explosion
 
-from src.constants import Direction, Owner, BulletState
+from src.constants import Direction, GameSide, BulletState, TankState
 
 
 class Bullet:
@@ -61,28 +61,28 @@ class Bullet:
         if self.direction == Direction.Up:
             self.rect.topleft = [self.rect.left, self.rect.top - self.speed]
             if self.rect.top < 0:
-                if self.game.play_sounds and self.owner == Owner.Player:
+                if self.game.play_sounds and self.owner == GameSide.Player:
                     self.game.sounds["steel"].play()
                 self.explode()
                 return
         elif self.direction == Direction.Right:
             self.rect.topleft = [self.rect.left + self.speed, self.rect.top]
             if self.rect.left > (416 - self.rect.width):
-                if self.game.play_sounds and self.owner == Owner.Player:
+                if self.game.play_sounds and self.owner == GameSide.Player:
                     self.game.sounds["steel"].play()
                 self.explode()
                 return
         elif self.direction == Direction.Down:
             self.rect.topleft = [self.rect.left, self.rect.top + self.speed]
             if self.rect.top > (416 - self.rect.height):
-                if self.game.play_sounds and self.owner == Owner.Player:
+                if self.game.play_sounds and self.owner == GameSide.Player:
                     self.game.sounds["steel"].play()
                 self.explode()
                 return
         elif self.direction == Direction.Left:
             self.rect.topleft = [self.rect.left - self.speed, self.rect.top]
             if self.rect.left < 0:
-                if self.game.play_sounds and self.owner == Owner.Player:
+                if self.game.play_sounds and self.owner == GameSide.Player:
                     self.game.sounds["steel"].play()
                 self.explode()
                 return
@@ -95,7 +95,7 @@ class Bullet:
         collisions = self.rect.collidelistall(rects)
         if collisions:
             for i in collisions:
-                if self.level.hit_tile(rects[i].topleft, self.power, self.owner == Owner.Player):
+                if self.level.hit_tile(rects[i].topleft, self.power, self.owner == GameSide.Player):
                     has_collided = True
         if has_collided:
             self.explode()
@@ -111,15 +111,15 @@ class Bullet:
 
         # check for collisions with players
         for player in self.game.players:
-            if player.state == player.STATE_ALIVE and self.rect.colliderect(player.rect):
-                if player.bulletImpact(self.owner == Owner.Player, self.damage, self.owner_class):
+            if player.state == TankState.Alive and self.rect.colliderect(player.rect):
+                if player.bulletImpact(self.owner == GameSide.Player, self.damage, self.owner_class):
                     self.destroy()
                     return
 
         # check for collisions with enemies
         for enemy in self.game.enemies:
-            if enemy.state == enemy.STATE_ALIVE and self.rect.colliderect(enemy.rect):
-                if enemy.bulletImpact(self.owner == Owner.Enemy, self.damage, self.owner_class):
+            if enemy.state == TankState.Alive and self.rect.colliderect(enemy.rect):
+                if enemy.bulletImpact(self.owner == GameSide.Enemy, self.damage, self.owner_class):
                     self.destroy()
                     return
 

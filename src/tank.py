@@ -6,60 +6,33 @@ from src.bullet import Bullet
 from src.explosion import Explosion
 from src.label import Label
 
-from src.constants import BulletState
+from src.constants import BulletState, Direction, GameSide, TankState
 
 
 class Tank:
-    # possible directions
-    (DIR_UP, DIR_RIGHT, DIR_DOWN, DIR_LEFT) = range(4)
-
-    # states
-    (STATE_SPAWNING, STATE_DEAD, STATE_ALIVE, STATE_EXPLODING) = range(4)
-
-    # sides
-    (SIDE_PLAYER, SIDE_ENEMY) = range(2)
-
-    def __init__(self, game, level, side, position=None, direction=None, filename=None):
+    def __init__(self, game, level, side, position=None, direction=None):
         self.game = game
-
-        # health. 0 health means dead
         self.health = 100
-
-        # tank can't move but can rotate and shoot
         self.paralised = False
-
-        # tank can't do anything
         self.paused = False
-
-        # tank is protected from bullets
         self.shielded = False
-
-        # px per move
         self.speed = 2
-
-        # how many bullets can tank fire simultaneously
         self.max_active_bullets = 1
-
-        # friend or foe
         self.side = side
-
-        # flashing state. 0-off, 1-on
         self.flash = 0
-
         # 0 - no superpowers
         # 1 - faster bullets
         # 2 - can fire 2 bullets
         # 3 - can destroy steel
         self.superpowers = 0
-
-        # each tank can pick up 1 bonus
         self.bonus = None
-
-        # navigation keys: fire, up, right, down, left
         self.controls = [pygame.K_SPACE, pygame.K_UP, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LEFT]
-
-        # currently pressed buttons (navigation only)
         self.pressed = [False] * 4
+
+        self.image_up = None
+        self.image_right = None
+        self.image_down = None
+        self.image_left = None
 
         self.shield_images = [
             self.game.sprites.subsurface(0, 48 * 2, 16 * 2, 16 * 2),
@@ -83,11 +56,11 @@ class Tank:
             self.rect = pygame.Rect(0, 0, 26, 26)
 
         if direction is None:
-            self.direction = random.choice([self.DIR_RIGHT, self.DIR_DOWN, self.DIR_LEFT])
+            self.direction = random.choice([Direction.Right, Direction.Down, Direction.Left])
         else:
             self.direction = direction
 
-        self.state = self.STATE_SPAWNING
+        self.state = TankState.Spawning
 
         # spawning animation
         self.timer_uuid_spawn = self.game.gtimer.add(100, lambda: self.toggleSpawnImage())
@@ -96,15 +69,12 @@ class Tank:
         self.timer_uuid_spawn_end = self.game.gtimer.add(1000, lambda: self.endSpawning())
 
     def endSpawning(self):
-        """ End spawning
-        Player becomes operational
-        """
-        self.state = self.STATE_ALIVE
+        self.state = TankState.Alive
         self.game.gtimer.destroy(self.timer_uuid_spawn_end)
 
     def toggleSpawnImage(self):
         """ advance to the next spawn image """
-        if self.state != self.STATE_SPAWNING:
+        if self.state != TankState.Spawning:
             self.game.gtimer.destroy(self.timer_uuid_spawn)
             return
         self.spawn_index += 1
@@ -114,7 +84,7 @@ class Tank:
 
     def toggleShieldImage(self):
         """ advance to the next shield image """
-        if self.state != self.STATE_ALIVE:
+        if self.state != TankState.Alive:
             self.game.gtimer.destroy(self.timer_uuid_shield)
             return
         if self.shielded:
@@ -124,20 +94,18 @@ class Tank:
             self.shield_image = self.shield_images[self.shield_index]
 
     def draw(self):
-        """ draw tank """
-        if self.state == self.STATE_ALIVE:
+        if self.state == TankState.Alive:
             self.game.screen.blit(self.image, self.rect.topleft)
             if self.shielded:
                 self.game.screen.blit(self.shield_image, [self.rect.left - 3, self.rect.top - 3])
-        elif self.state == self.STATE_EXPLODING:
+        elif self.state == TankState.Exploding:
             self.explosion.draw()
-        elif self.state == self.STATE_SPAWNING:
+        elif self.state == TankState.Spawning:
             self.game.screen.blit(self.spawn_image, self.rect.topleft)
 
     def explode(self):
-        """ start tanks's explosion """
-        if self.state != self.STATE_DEAD:
-            self.state = self.STATE_EXPLODING
+        if self.state != TankState.Dead:
+            self.state = TankState.Exploding
             self.explosion = Explosion(self.game, self.rect.topleft)
 
             if self.bonus:
@@ -149,7 +117,7 @@ class Tank:
         @return boolean True if bullet was fired, false otherwise
         """
 
-        if self.state != self.STATE_ALIVE:
+        if self.state != TankState.Alive:
             self.game.gtimer.destroy(self.timer_uuid_fire)
             return False
 
@@ -174,10 +142,10 @@ class Tank:
         if self.superpowers > 2:
             bullet.power = 2
 
-        if self.side == self.SIDE_PLAYER:
-            bullet.owner = self.SIDE_PLAYER
+        if self.side == GameSide.Player:
+            bullet.owner = GameSide.Player
         else:
-            bullet.owner = self.SIDE_ENEMY
+            bullet.owner = GameSide.Enemy
             self.bullet_queued = False
 
         bullet.owner_class = self
@@ -190,37 +158,36 @@ class Tank:
         """
         self.direction = direction
 
-        if direction == self.DIR_UP:
+        if direction == Direction.Up:
             self.image = self.image_up
-        elif direction == self.DIR_RIGHT:
+        elif direction == Direction.Right:
             self.image = self.image_right
-        elif direction == self.DIR_DOWN:
+        elif direction == Direction.Down:
             self.image = self.image_down
-        elif direction == self.DIR_LEFT:
+        elif direction == Direction.Left:
             self.image = self.image_left
 
         if fix_position:
             new_x = self.nearest(self.rect.left, 8) + 3
             new_y = self.nearest(self.rect.top, 8) + 3
 
-            if (abs(self.rect.left - new_x) < 5):
+            if abs(self.rect.left - new_x) < 5:
                 self.rect.left = new_x
 
-            if (abs(self.rect.top - new_y) < 5):
+            if abs(self.rect.top - new_y) < 5:
                 self.rect.top = new_y
 
     def turnAround(self):
         """ Turn tank into opposite direction """
-        if self.direction in (self.DIR_UP, self.DIR_RIGHT):
+        if self.direction in (Direction.Up, Direction.Right):
             self.rotate(self.direction + 2, False)
         else:
             self.rotate(self.direction - 2, False)
 
     def update(self, time_passed):
-        """ Update timer and explosion (if any) """
-        if self.state == self.STATE_EXPLODING:
+        if self.state == TankState.Exploding:
             if not self.explosion.active:
-                self.state = self.STATE_DEAD
+                self.state = TankState.Dead
                 del self.explosion
 
     def nearest(self, num, base):
@@ -239,7 +206,7 @@ class Tank:
         if not friendly_fire:
             self.health -= damage
             if self.health < 1:
-                if self.side == self.SIDE_ENEMY:
+                if self.side == GameSide.Enemy:
                     tank.trophies["enemy" + str(self.type)] += 1
                     points = (self.type + 1) * 100
                     tank.score += points
@@ -251,20 +218,16 @@ class Tank:
                 self.explode()
             return True
 
-        if self.side == self.SIDE_ENEMY:
+        if self.side == GameSide.Enemy:
             return False
-        elif self.side == self.SIDE_PLAYER:
+        elif self.side == GameSide.Player:
             if not self.paralised:
                 self.setParalised(True)
                 self.timer_uuid_paralise = self.game.gtimer.add(10000, lambda: self.setParalised(False), 1)
             return True
 
     def setParalised(self, paralised=True):
-        """ set tank paralise state
-        @param boolean paralised
-        @return None
-        """
-        if self.state != self.STATE_ALIVE:
+        if self.state != TankState.Alive:
             self.game.gtimer.destroy(self.timer_uuid_paralise)
             return
         self.paralised = paralised
