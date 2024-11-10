@@ -15,19 +15,14 @@ class Explosion:
             ]
 
         images.reverse()
-
         self.images = [] + images
-
         self.image = self.images.pop()
-
         self.game.gtimer.add(interval, lambda: self.update(), len(self.images) + 1)
 
     def draw(self):
-        """ draw current explosion frame """
         self.game.screen.blit(self.image, self.position)
 
     def update(self):
-        """ Advace to the next image """
         if len(self.images) > 0:
             self.image = self.images.pop()
         else:

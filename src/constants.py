@@ -78,3 +78,19 @@ class TankState(IntEnum):
     Dead = 1
     Alive = 2
     Exploding = 3
+
+
+class BonusType(IntEnum):
+    Grenade = 0
+    Helmet = 1
+    Shovel = 2
+    Star = 3
+    Tank = 4
+    Timer = 5
+
+
+class EnemyType(IntEnum):
+    Basic = 0
+    Fast = 1
+    Powerful = 2
+    Armored = 3

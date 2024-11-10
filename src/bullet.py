@@ -22,8 +22,6 @@ class Bullet:
 
         self.image = self.game.sprites.subsurface(75 * 2, 74 * 2, 3 * 2, 4 * 2)
 
-        # position is player's top left corner, so we'll need to
-        # recalculate a bit. also rotate image itself.
         if direction == Direction.Up:
             self.rect = pygame.Rect(position[0] + 11, position[1] - 8, 6, 8)
         elif direction == Direction.Right:
@@ -57,7 +55,6 @@ class Bullet:
         if self.state != BulletState.Active:
             return
 
-        """ move bullet """
         if self.direction == Direction.Up:
             self.rect.topleft = [self.rect.left, self.rect.top - self.speed]
             if self.rect.top < 0:
@@ -89,8 +86,6 @@ class Bullet:
 
         has_collided = False
 
-        # check for collisions with walls. one bullet can destroy several (1 or 2)
-        # tiles but explosion remains 1
         rects = self.level.obstacle_rects
         collisions = self.rect.collidelistall(rects)
         if collisions:
@@ -101,7 +96,6 @@ class Bullet:
             self.explode()
             return
 
-        # check for collisions with other bullets
         for bullet in self.game.bullets:
             if self.state == BulletState.Active and bullet.owner != self.owner and bullet != self and self.rect.colliderect(
                     bullet.rect):
@@ -109,21 +103,18 @@ class Bullet:
                 self.explode()
                 return
 
-        # check for collisions with players
         for player in self.game.players:
             if player.state == TankState.Alive and self.rect.colliderect(player.rect):
-                if player.bulletImpact(self.owner == GameSide.Player, self.damage, self.owner_class):
+                if player.calculate_bullet_impact(self.owner == GameSide.Player, self.damage, self.owner_class):
                     self.destroy()
                     return
 
-        # check for collisions with enemies
         for enemy in self.game.enemies:
             if enemy.state == TankState.Alive and self.rect.colliderect(enemy.rect):
-                if enemy.bulletImpact(self.owner == GameSide.Enemy, self.damage, self.owner_class):
+                if enemy.calculate_bullet_impact(self.owner == GameSide.Enemy, self.damage, self.owner_class):
                     self.destroy()
                     return
 
-        # check for collision with castle
         if self.game.castle.active and self.rect.colliderect(self.game.castle.rect):
             self.game.castle.destroy()
             self.destroy()

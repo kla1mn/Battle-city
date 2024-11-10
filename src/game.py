@@ -9,7 +9,7 @@ from src.enemy import Enemy
 from src.label import Label
 from src.timer import Timer
 
-from src.constants import Direction, Tile, GameSide, TankState
+from src.constants import Direction, Tile, GameSide, TankState, BonusType
 
 
 class Game:
@@ -62,16 +62,13 @@ class Game:
 
         self.castle = Castle(self)
 
-        # Load images
         self.enemy_life_image = self.sprites.subsurface(81 * 2, 57 * 2, 7 * 2, 7 * 2)
         self.player_life_image = self.sprites.subsurface(89 * 2, 56 * 2, 7 * 2, 8 * 2)
         self.flag_image = self.sprites.subsurface(64 * 2, 49 * 2, 16 * 2, 15 * 2)
         self.player_image = pygame.transform.rotate(self.sprites.subsurface(0, 0, 13 * 2, 13 * 2), 270)
 
-        # Load font
         self.font = pygame.font.Font("../fonts/font.ttf", 16)
 
-        # Pre-render game over text
         self.im_game_over = pygame.Surface((64, 40))
         self.im_game_over.set_colorkey((0, 0, 0))
         self.im_game_over.blit(self.font.render("GAME", False, (127, 64, 64)), [0, 0])
@@ -268,23 +265,23 @@ class Game:
         player.trophies["bonus"] += 1
         player.score += 500
 
-        if bonus.bonus == bonus.BONUS_GRENADE:
+        if bonus.bonus == BonusType.Grenade:
             for enemy in self.enemies:
                 enemy.explode()
-        elif bonus.bonus == bonus.BONUS_HELMET:
+        elif bonus.bonus == BonusType.Helmet:
             self._cover_player_with_shield(player, True, 10000)
-        elif bonus.bonus == bonus.BONUS_SHOVEL:
+        elif bonus.bonus == BonusType.Shovel:
             self.level.build_castle(Tile.Steel)
             self.gtimer.add(10000, lambda: self.level.build_castle(Tile.Brick), 1)
-        elif bonus.bonus == bonus.BONUS_STAR:
+        elif bonus.bonus == BonusType.Star:
             player.superpowers += 1
             if player.superpowers == 2:
                 player.max_active_bullets = 2
-        elif bonus.bonus == bonus.BONUS_TANK:
+        elif bonus.bonus == BonusType.Tank:
             player.lives += 1
-        elif bonus.bonus == bonus.BONUS_TIMER:
-            self.toggleEnemyFreeze(True)
-            self.gtimer.add(10000, lambda: self.toggleEnemyFreeze(False), 1)
+        elif bonus.bonus == BonusType.Timer:
+            self.toggle_enemy_freeze(True)
+            self.gtimer.add(10000, lambda: self.toggle_enemy_freeze(False), 1)
         self.bonuses.remove(bonus)
 
         self.labels.append(Label(self, bonus.rect.topleft, "500", 500))
@@ -292,7 +289,7 @@ class Game:
     def _cover_player_with_shield(self, player, shield=True, duration=None):
         player.shielded = shield
         if shield:
-            player.timer_uuid_shield = self.gtimer.add(100, lambda: player.toggleShieldImage())
+            player.timer_uuid_shield = self.gtimer.add(100, lambda: player.toggle_shield_image())
         else:
             self.gtimer.destroy(player.timer_uuid_shield)
 
@@ -346,14 +343,14 @@ class Game:
         self.game_over_y = 416 + 40
 
         self.game_over = True
-        self.gtimer.add(3000, lambda: self.showScores(), 1)
+        self.gtimer.add(3000, lambda: self.show_scores(), 1)
 
     def _finish_level(self):
         if self.play_sounds:
             self.sounds["background"].stop()
 
         self.active = False
-        self.gtimer.add(3000, lambda: self.showScores(), 1)
+        self.gtimer.add(3000, lambda: self.show_scores(), 1)
 
         print(f"Stage {self.stage} completed")
 
@@ -403,14 +400,14 @@ class Game:
         for player in self.players:
             player.draw()
 
-        for label in self.labels:
-            label.draw()
+        #for label in self.labels:
+         #   label.draw()
 
         for bullet in self.bullets:
             bullet.draw()
 
-        for bonus in self.bonuses:
-            bonus.draw()
+        #for bonus in self.bonuses:
+         #   bonus.draw()
 
         self.level.draw([Tile.Grass])
 
@@ -423,7 +420,7 @@ class Game:
 
         pygame.display.flip()
 
-    def toggleEnemyFreeze(self, freeze=True):
+    def toggle_enemy_freeze(self, freeze=True):
         for enemy in self.enemies:
             enemy.paused = freeze
         self.time_freeze = freeze
@@ -451,7 +448,7 @@ class Game:
             return False
         return True
 
-    def showScores(self):
+    def show_scores(self):
         self.running = False
         del self.gtimer.timers[:]
 
@@ -461,7 +458,6 @@ class Game:
 
         hiscore = self.load_hiscore()
 
-        # update hiscore if needed
         if self.players[0].score > hiscore:
             hiscore = self.players[0].score
             self.save_hiscore(hiscore)
@@ -483,7 +479,6 @@ class Game:
 
         self.screen.fill([0, 0, 0])
 
-        # colors
         black = pygame.Color("black")
         white = pygame.Color("white")
         purple = pygame.Color(127, 64, 64)

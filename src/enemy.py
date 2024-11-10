@@ -3,13 +3,11 @@ import random
 import pygame
 
 from src.bonus import Bonus
-from src.constants import TILE_SIZE, Direction, TankState
+from src.constants import TILE_SIZE, Direction, TankState, EnemyType
 from src.tank import Tank
 
 
 class Enemy(Tank):
-    (TYPE_BASIC, TYPE_FAST, TYPE_POWER, TYPE_ARMOR) = range(4)
-
     def __init__(self, game, level, type, position=None):
         Tank.__init__(self, game, level, type, position=None, direction=None)
         self.game = game
@@ -20,22 +18,21 @@ class Enemy(Tank):
             self.state = TankState.Dead
             return
 
-        if self.type == self.TYPE_BASIC:
+        if self.type == EnemyType.Basic:
             self.speed = 1
-        elif self.type == self.TYPE_FAST:
+        elif self.type == EnemyType.Fast:
             self.speed = 3
-        elif self.type == self.TYPE_POWER:
+        elif self.type == EnemyType.Powerful:
             self.superpowers = 1
-        elif self.type == self.TYPE_ARMOR:
+        elif self.type == EnemyType.Armored:
             self.health = 400
 
-        # 1 in 5 chance this will be bonus carrier, but only if no other tank is
-        if random.randint(1, 5) == 1:
-            self.bonus = True
-            for enemy in self.game.enemies:
-                if enemy.bonus:
-                    self.bonus = False
-                    break
+        # if random.randint(1, 5) == 1:
+        #     self.bonus = True
+        #     for enemy in self.game.enemies:
+        #         if enemy.bonus:
+        #             self.bonus = False
+        #             break
 
         images = [
             self.game.sprites.subsurface(32 * 2, 0, 13 * 2, 15 * 2),
@@ -70,23 +67,18 @@ class Enemy(Tank):
         self.rotate(self.direction, False)
 
         if position is None:
-            self.rect.topleft = self.getFreeSpawningPosition()
+            self.rect.topleft = self.get_free_spawning_position()
             if not self.rect.topleft:
                 self.state = TankState.Dead
                 return
 
-        # list of map coords where tank should go next
-        self.path = self.generatePath(self.direction)
-
-        # 1000 is duration between shots
+        self.path = self.generate_path(self.direction)
         self.timer_uuid_fire = self.game.gtimer.add(1000, lambda: self.fire())
 
-        # turn on flashing
         if self.bonus:
-            self.timer_uuid_flash = self.game.gtimer.add(200, lambda: self.toggleFlash())
+            self.timer_uuid_flash = self.game.gtimer.add(200, lambda: self.toggle_flash())
 
-    def toggleFlash(self):
-        """ Toggle flash state """
+    def toggle_flash(self):
         if self.state not in (TankState.Alive, TankState.Spawning):
             self.game.gtimer.destroy(self.timer_uuid_flash)
             return
@@ -103,16 +95,15 @@ class Enemy(Tank):
             self.image_left = self.image1_left
         self.rotate(self.direction, False)
 
-    def spawnBonus(self):
-        """ Create new bonus if needed """
+    def spawn_bonus(self):
         if len(self.game.bonuses) > 0:
             return
         bonus = Bonus(self.game, self.level)
         self.game.bonuses.append(bonus)
-        self.game.gtimer.add(500, lambda: bonus.toggleVisibility())
+        self.game.gtimer.add(500, lambda: bonus.toggle_visibility())
         self.game.gtimer.add(10000, lambda: self.game.bonuses.remove(bonus), 1)
 
-    def getFreeSpawningPosition(self):
+    def get_free_spawning_position(self):
         available_positions = [
             [(TILE_SIZE * 2 - self.rect.width) / 2, (TILE_SIZE * 2 - self.rect.height) / 2],
             [12 * TILE_SIZE + (TILE_SIZE * 2 - self.rect.width) / 2, (TILE_SIZE * 2 - self.rect.height) / 2],
@@ -122,10 +113,7 @@ class Enemy(Tank):
         random.shuffle(available_positions)
 
         for pos in available_positions:
-
             enemy_rect = pygame.Rect(pos, [26, 26])
-
-            # collisions with other enemies
             collision = False
             for enemy in self.game.enemies:
                 if enemy_rect.colliderect(enemy.rect):
@@ -135,7 +123,6 @@ class Enemy(Tank):
             if collision:
                 continue
 
-            # collisions with players
             collision = False
             for player in self.game.players:
                 if enemy_rect.colliderect(player.rect):
@@ -149,61 +136,54 @@ class Enemy(Tank):
         return False
 
     def move(self):
-        """ move enemy if possible """
-
-        if self.state != TankState.Alive or self.paused or self.paralised:
+        if self.state != TankState.Alive or self.paused or self.paralyzed:
             return
 
         if not self.path:
-            self.path = self.generatePath(None, True)
+            self.path = self.generate_path(None, True)
 
         new_position = self.path.pop(0)
 
         # move enemy
         if self.direction == Direction.Up:
             if new_position[1] < 0:
-                self.path = self.generatePath(self.direction, True)
+                self.path = self.generate_path(self.direction, True)
                 return
         elif self.direction == Direction.Right:
             if new_position[0] > (416 - 26):
-                self.path = self.generatePath(self.direction, True)
+                self.path = self.generate_path(self.direction, True)
                 return
         elif self.direction == Direction.Down:
             if new_position[1] > (416 - 26):
-                self.path = self.generatePath(self.direction, True)
+                self.path = self.generate_path(self.direction, True)
                 return
         elif self.direction == Direction.Left:
             if new_position[0] < 0:
-                self.path = self.generatePath(self.direction, True)
+                self.path = self.generate_path(self.direction, True)
                 return
 
         new_rect = pygame.Rect(new_position, [26, 26])
 
-        # collisions with tiles
         if new_rect.collidelist(self.level.obstacle_rects) != -1:
-            self.path = self.generatePath(self.direction, True)
+            self.path = self.generate_path(self.direction, True)
             return
 
-        # collisions with other enemies
         for enemy in self.game.enemies:
             if enemy != self and new_rect.colliderect(enemy.rect):
-                self.turnAround()
-                self.path = self.generatePath(self.direction)
+                self.turn_around()
+                self.path = self.generate_path(self.direction)
                 return
 
-        # collisions with players
         for player in self.game.players:
             if new_rect.colliderect(player.rect):
-                self.turnAround()
-                self.path = self.generatePath(self.direction)
+                self.turn_around()
+                self.path = self.generate_path(self.direction)
                 return
 
-        # collisions with bonuses
         for bonus in self.game.bonuses:
             if new_rect.colliderect(bonus.rect):
                 self.game.bonuses.remove(bonus)
 
-        # if no collision, move enemy
         self.rect.topleft = new_rect.topleft
 
     def update(self, time_passed):
@@ -211,10 +191,7 @@ class Enemy(Tank):
         if self.state == TankState.Alive and not self.paused:
             self.move()
 
-    def generatePath(self, direction=None, fix_direction=False):
-        """ If direction is specified, try continue that way, otherwise choose at random
-        """
-
+    def generate_path(self, direction=None, fix_direction=False):
         all_directions = [Direction.Up, Direction.Right, Direction.Down, Direction.Left]
 
         if direction is None:
@@ -243,7 +220,6 @@ class Enemy(Tank):
             directions.insert(0, direction)
             directions.append(opposite_direction)
 
-        # at first, work with general units (steps) not px
         x = int(round(self.rect.left / 16))
         y = int(round(self.rect.top / 16))
 
@@ -271,29 +247,25 @@ class Enemy(Tank):
                     new_direction = direction
                     break
 
-        # if we can go anywhere else, turn around
         if new_direction is None:
             new_direction = opposite_direction
-            print("nav izejas. griezhamies")
 
-        # fix tanks position
         if fix_direction and new_direction == self.direction:
             fix_direction = False
 
         self.rotate(new_direction, fix_direction)
 
         positions = []
-
         x = self.rect.left
         y = self.rect.top
 
         if new_direction in (Direction.Right, Direction.Left):
-            axis_fix = self.nearest(y, 16) - y
+            axis_fix = self.get_nearest(y, 16) - y
         else:
-            axis_fix = self.nearest(x, 16) - x
+            axis_fix = self.get_nearest(x, 16) - x
         axis_fix = 0
 
-        pixels = self.nearest(random.randint(1, 12) * 32, 32) + axis_fix + 3
+        pixels = self.get_nearest(random.randint(1, 12) * 32, 32) + axis_fix + 3
 
         if new_direction == Direction.Up:
             for px in range(0, pixels, self.speed):

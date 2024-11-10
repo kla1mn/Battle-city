@@ -13,7 +13,7 @@ class Tank:
     def __init__(self, game, level, side, position=None, direction=None):
         self.game = game
         self.health = 100
-        self.paralised = False
+        self.paralyzed = False
         self.paused = False
         self.shielded = False
         self.speed = 2
@@ -29,6 +29,7 @@ class Tank:
         self.controls = [pygame.K_SPACE, pygame.K_UP, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LEFT]
         self.pressed = [False] * 4
 
+        self.image = None
         self.image_up = None
         self.image_right = None
         self.image_down = None
@@ -62,18 +63,14 @@ class Tank:
 
         self.state = TankState.Spawning
 
-        # spawning animation
-        self.timer_uuid_spawn = self.game.gtimer.add(100, lambda: self.toggleSpawnImage())
+        self.timer_uuid_spawn = self.game.gtimer.add(100, lambda: self.toggle_spawn_image())
+        self.timer_uuid_spawn_end = self.game.gtimer.add(1000, lambda: self.end_spawning())
 
-        # duration of spawning
-        self.timer_uuid_spawn_end = self.game.gtimer.add(1000, lambda: self.endSpawning())
-
-    def endSpawning(self):
+    def end_spawning(self):
         self.state = TankState.Alive
         self.game.gtimer.destroy(self.timer_uuid_spawn_end)
 
-    def toggleSpawnImage(self):
-        """ advance to the next spawn image """
+    def toggle_spawn_image(self):
         if self.state != TankState.Spawning:
             self.game.gtimer.destroy(self.timer_uuid_spawn)
             return
@@ -82,8 +79,7 @@ class Tank:
             self.spawn_index = 0
         self.spawn_image = self.spawn_images[self.spawn_index]
 
-    def toggleShieldImage(self):
-        """ advance to the next shield image """
+    def toggle_shield_image(self):
         if self.state != TankState.Alive:
             self.game.gtimer.destroy(self.timer_uuid_shield)
             return
@@ -112,11 +108,6 @@ class Tank:
                 self.spawnBonus()
 
     def fire(self, forced=False):
-        """ Shoot a bullet
-        @param boolean forced. If false, check whether tank has exceeded his bullet quota. Default: True
-        @return boolean True if bullet was fired, false otherwise
-        """
-
         if self.state != TankState.Alive:
             self.game.gtimer.destroy(self.timer_uuid_fire)
             return False
@@ -153,9 +144,6 @@ class Tank:
         return True
 
     def rotate(self, direction, fix_position=True):
-        """ Rotate tank
-        rotate, update image and correct position
-        """
         self.direction = direction
 
         if direction == Direction.Up:
@@ -168,17 +156,14 @@ class Tank:
             self.image = self.image_left
 
         if fix_position:
-            new_x = self.nearest(self.rect.left, 8) + 3
-            new_y = self.nearest(self.rect.top, 8) + 3
-
+            new_x = self.get_nearest(self.rect.left, 8) + 3
+            new_y = self.get_nearest(self.rect.top, 8) + 3
             if abs(self.rect.left - new_x) < 5:
                 self.rect.left = new_x
-
             if abs(self.rect.top - new_y) < 5:
                 self.rect.top = new_y
 
-    def turnAround(self):
-        """ Turn tank into opposite direction """
+    def turn_around(self):
         if self.direction in (Direction.Up, Direction.Right):
             self.rotate(self.direction + 2, False)
         else:
@@ -190,16 +175,10 @@ class Tank:
                 self.state = TankState.Dead
                 del self.explosion
 
-    def nearest(self, num, base):
-        """ Round number to nearest divisible """
+    def get_nearest(self, num, base):
         return int(round(num / (base * 1.0)) * base)
 
-    def bulletImpact(self, friendly_fire=False, damage=100, tank=None):
-        """ Bullet impact
-        Return True if bullet should be destroyed on impact. Only enemy friendly-fire
-        doesn't trigger bullet explosion
-        """
-
+    def calculate_bullet_impact(self, friendly_fire=False, damage=100, tank=None):
         if self.shielded:
             return True
 
@@ -221,13 +200,13 @@ class Tank:
         if self.side == GameSide.Enemy:
             return False
         elif self.side == GameSide.Player:
-            if not self.paralised:
-                self.setParalised(True)
-                self.timer_uuid_paralise = self.game.gtimer.add(10000, lambda: self.setParalised(False), 1)
+            if not self.paralyzed:
+                self.set_paralyzed(True)
+                self.timer_uuid_paralise = self.game.gtimer.add(10000, lambda: self.set_paralyzed(False), 1)
             return True
 
-    def setParalised(self, paralised=True):
+    def set_paralyzed(self, paralyzed=True):
         if self.state != TankState.Alive:
             self.game.gtimer.destroy(self.timer_uuid_paralise)
             return
-        self.paralised = paralised
+        self.paralyzed = paralyzed
