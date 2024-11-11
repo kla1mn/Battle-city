@@ -11,20 +11,6 @@ ENEMIES_BY_LEVEL = (
     (4, 6, 4, 6), (2, 8, 2, 8), (15, 2, 2, 1), (0, 4, 10, 6), (4, 8, 4, 4),
     (3, 8, 3, 6), (6, 4, 2, 8), (4, 4, 4, 8), (0, 10, 4, 6), (0, 6, 4, 10))
 
-ALPHABET = {"a": "0071b63c7ff1e3",
-            "b": "01fb1e3fd8f1fe",
-            "c": "00799e0c18199e",
-            "e": "01fb060f98307e",
-            "g": "007d860cf8d99f",
-            "i": "01f8c183060c7e",
-            "l": "0183060c18307e",
-            "m": "018fbffffaf1e3",
-            "o": "00fb1e3c78f1be",
-            "r": "01fb1e3cff3767",
-            "t": "01f8c183060c18",
-            "v": "018f1e3eef8e08",
-            "y": "019b3667860c18"}
-
 CASTLE_TILES = [(11 * TILE_SIZE, 23 * TILE_SIZE),
                 (11 * TILE_SIZE, 24 * TILE_SIZE),
                 (11 * TILE_SIZE, 25 * TILE_SIZE),
@@ -71,6 +57,21 @@ class BulletState(IntEnum):
 class BulletPower(IntEnum):
     Regular = 0
     Powerful = 1
+
+
+ALPHABET = {"a": "0071b63c7ff1e3",
+            "b": "01fb1e3fd8f1fe",
+            "c": "00799e0c18199e",
+            "e": "01fb060f98307e",
+            "g": "007d860cf8d99f",
+            "i": "01f8c183060c7e",
+            "l": "0183060c18307e",
+            "m": "018fbffffaf1e3",
+            "o": "00fb1e3c78f1be",
+            "r": "01fb1e3cff3767",
+            "t": "01f8c183060c18",
+            "v": "018f1e3eef8e08",
+            "y": "019b3667860c18"}
 
 
 class TankState(IntEnum):
