@@ -27,12 +27,12 @@ class Enemy(Tank):
         elif self.type == EnemyType.Armored:
             self.health = 400
 
-        # if random.randint(1, 5) == 1:
-        #     self.bonus = True
-        #     for enemy in self.game.enemies:
-        #         if enemy.bonus:
-        #             self.bonus = False
-        #             break
+        if random.randint(1, 5) == 1:
+            self.bonus = True
+            for enemy in self.game.enemies:
+                if enemy.bonus:
+                    self.bonus = False
+                    break
 
         images = [
             self.game.sprites.subsurface(32 * 2, 0, 13 * 2, 15 * 2),

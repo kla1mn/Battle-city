@@ -400,14 +400,14 @@ class Game:
         for player in self.players:
             player.draw()
 
-        #for label in self.labels:
-         #   label.draw()
+        for label in self.labels:
+            label.draw()
 
         for bullet in self.bullets:
             bullet.draw()
 
-        #for bonus in self.bonuses:
-         #   bonus.draw()
+        for bonus in self.bonuses:
+            bonus.draw()
 
         self.level.draw([Tile.Grass])
 

@@ -105,7 +105,7 @@ class Tank:
             self.explosion = Explosion(self.game, self.rect.topleft)
 
             if self.bonus:
-                self.spawnBonus()
+                self.spawn_bonus()
 
     def fire(self, forced=False):
         if self.state != TankState.Alive:
